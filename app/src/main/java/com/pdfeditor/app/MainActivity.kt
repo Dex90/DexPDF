@@ -3,7 +3,6 @@ package com.pdfeditor.app
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Bundle
@@ -13,7 +12,6 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.github.chrisbanes.photoview.PhotoView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -138,8 +136,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun syncOverlayMatrix() {
         val bitmap = currentPageBitmap ?: return
-        val matrix = Matrix()
-        binding.pdfPageView.getDisplayMatrix(matrix)
+        val matrix = binding.pdfPageView.displayMatrix
         binding.overlayView.updateDisplayMatrix(
             matrix,
             bitmap.width.toFloat(),
@@ -198,8 +195,7 @@ class MainActivity : AppCompatActivity() {
         inlineBitmapY = bitmapY
 
         // Convert bitmap coords to screen coords for positioning the EditText
-        val matrix = Matrix()
-        binding.pdfPageView.getDisplayMatrix(matrix)
+        val matrix = binding.pdfPageView.displayMatrix
         val pts = floatArrayOf(bitmapX, bitmapY)
         matrix.mapPoints(pts)
         val screenX = pts[0]
