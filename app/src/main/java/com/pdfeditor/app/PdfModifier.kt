@@ -20,7 +20,8 @@ object PdfModifier {
         pageIndex: Int,
         overlays: List<OverlayView.OverlayItem>,
         viewWidth: Float,
-        viewHeight: Float
+        viewHeight: Float,
+        bitmapScale: Float = 3f
     ) {
         val document = PDDocument.load(pdfFile)
         val page = document.getPage(pageIndex)
@@ -31,10 +32,33 @@ object PdfModifier {
             document, page, PDPageContentStream.AppendMode.APPEND, true, true
         )
 
+        // The rendered bitmap is bitmapScale times the PDF page size
+        val bitmapWidth = pageWidth * bitmapScale
+        val bitmapHeight = pageHeight * bitmapScale
+
+        // fitCenter scale: the bitmap is scaled to fit inside the view
+        val fitScale = minOf(viewWidth / bitmapWidth, viewHeight / bitmapHeight)
+
+        // Displayed image size after fitCenter scaling
+        val displayedWidth = bitmapWidth * fitScale
+        val displayedHeight = bitmapHeight * fitScale
+
+        // Offset from centering within the view
+        val offsetX = (viewWidth - displayedWidth) / 2f
+        val offsetY = (viewHeight - displayedHeight) / 2f
+
         for (item in overlays) {
-            // Convert view coordinates to PDF coordinates
-            val pdfX = (item.x / viewWidth) * pageWidth
-            val pdfY = pageHeight - ((item.y / viewHeight) * pageHeight)
+            // Convert viewport coordinates to position within the displayed image
+            val imgX = item.x - offsetX
+            val imgY = item.y - offsetY
+
+            // Convert to bitmap coordinates
+            val bitmapX = imgX / fitScale
+            val bitmapY = imgY / fitScale
+
+            // Convert bitmap coordinates to PDF coordinates
+            val pdfX = bitmapX / bitmapScale
+            val pdfY = pageHeight - (bitmapY / bitmapScale)
 
             when (item.type) {
                 OverlayView.PlacementMode.TEXT -> {
