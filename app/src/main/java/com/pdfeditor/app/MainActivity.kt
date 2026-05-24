@@ -10,11 +10,9 @@ import android.os.ParcelFileDescriptor
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.pdfeditor.app.databinding.ActivityMainBinding
-import com.pdfeditor.app.databinding.DialogAddTextBinding
 import com.pdfeditor.app.databinding.DialogSelectSignatureBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -77,7 +75,15 @@ class MainActivity : AppCompatActivity() {
                 showToast(getString(R.string.no_file_open))
                 return@setOnClickListener
             }
-            showAddTextDialog()
+            // Show text input bar and enable placement mode
+            isAddingText = true
+            binding.textInputBar.visibility = View.VISIBLE
+            binding.editTextDirect.requestFocus()
+            binding.overlayView.setPlacementMode(OverlayView.PlacementMode.TEXT)
+        }
+
+        binding.btnCancelText.setOnClickListener {
+            cancelTextMode()
         }
 
         binding.btnSignature.setOnClickListener {
@@ -111,14 +117,32 @@ class MainActivity : AppCompatActivity() {
         binding.overlayView.setOnPlacementListener(object : OverlayView.OnPlacementListener {
             override fun onTextPlaced(x: Float, y: Float, text: String, textSize: Float) {
                 isAddingText = false
-                binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
             }
 
             override fun onSignaturePlaced(x: Float, y: Float, bitmap: Bitmap) {
                 isAddingSignature = false
                 binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
             }
+
+            override fun onTextPositionSelected(x: Float, y: Float) {
+                // User tapped the PDF - place text directly from input bar
+                val text = binding.editTextDirect.text.toString()
+                if (text.isNotBlank()) {
+                    binding.overlayView.addTextAt(x, y, text, 14f)
+                    // Clear input but keep mode active for more text
+                    binding.editTextDirect.text?.clear()
+                } else {
+                    showToast("Scrivi prima il testo nella barra in basso")
+                }
+            }
         })
+    }
+
+    private fun cancelTextMode() {
+        isAddingText = false
+        binding.textInputBar.visibility = View.GONE
+        binding.editTextDirect.text?.clear()
+        binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
     }
 
     private fun handleIncomingIntent(intent: Intent) {
@@ -203,29 +227,6 @@ class MainActivity : AppCompatActivity() {
             binding.pdfPageView.setImageBitmap(bitmap)
             binding.tvPageIndicator.text = getString(R.string.page_indicator, currentPage + 1, totalPages)
         }
-    }
-
-    private fun showAddTextDialog() {
-        val dialogBinding = DialogAddTextBinding.inflate(layoutInflater)
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.add_text))
-            .setView(dialogBinding.root)
-            .setPositiveButton("OK") { _, _ ->
-                val text = dialogBinding.editTextInput.text.toString()
-                if (text.isNotBlank()) {
-                    pendingText = text
-                    pendingTextSize = (dialogBinding.seekBarTextSize.progress + 8).toFloat()
-                    isAddingText = true
-                    binding.overlayView.setPlacementMode(
-                        OverlayView.PlacementMode.TEXT,
-                        text = text,
-                        textSize = pendingTextSize
-                    )
-                    showToast(getString(R.string.place_text))
-                }
-            }
-            .setNegativeButton("Annulla", null)
-            .show()
     }
 
     private fun showSignatureDialog() {

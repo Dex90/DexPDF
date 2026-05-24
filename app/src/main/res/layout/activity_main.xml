@@ -160,6 +160,43 @@
         </LinearLayout>
     </FrameLayout>
 
+    <!-- Text Input Bar (visible only in text mode) -->
+    <LinearLayout
+        android:id="@+id/textInputBar"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:background="@color/surface"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextDirect"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@android:drawable/editbox_background"
+            android:hint="Scrivi qui, poi tocca il PDF..."
+            android:inputType="text"
+            android:paddingHorizontal="12dp"
+            android:textSize="14sp" />
+
+        <ImageButton
+            android:id="@+id/btnCancelText"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Annulla"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+
+    </LinearLayout>
+
     <!-- Bottom Navigation Bar -->
     <LinearLayout
         android:id="@+id/bottomBar"

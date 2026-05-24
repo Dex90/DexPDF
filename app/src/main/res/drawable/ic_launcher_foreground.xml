@@ -5,19 +5,41 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Background circle -->
+    <!-- Document shape with folded corner -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M30,20 L68,20 L78,30 L78,88 L30,88 Z" />
+
+    <!-- Folded corner -->
+    <path
+        android:fillColor="#388E3C"
+        android:pathData="M68,20 L68,30 L78,30 Z" />
+
+    <!-- Text lines on document -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
-
-    <!-- "D" letter stylized -->
+        android:strokeWidth="0"
+        android:pathData="M38,42 L70,42 L70,45 L38,45 Z" />
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M30,35 L30,73 L45,73 C58,73 65,65 65,54 C65,43 58,35 45,35 Z M36,41 L44,41 C54,41 59,46 59,54 C59,62 54,67 44,67 L36,67 Z"/>
-
-    <!-- Small "PDF" text -->
+        android:fillColor="#FFFFFF"
+        android:strokeWidth="0"
+        android:pathData="M38,50 L65,50 L65,53 L38,53 Z" />
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M69,58 L69,73 L72,73 L72,67 L75,67 C78,67 80,65 80,62.5 C80,60 78,58 75,58 Z M72,61 L74.5,61 C76,61 77,61.8 77,62.5 C77,63.2 76,64 74.5,64 L72,64 Z"/>
+        android:fillColor="#FFFFFF"
+        android:strokeWidth="0"
+        android:pathData="M38,58 L68,58 L68,61 L38,61 Z" />
+
+    <!-- "Dex" text at bottom -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,70 L38,82 L44,82 C49,82 52,79 52,76 C52,73 49,70 44,70 Z M41,73 L43.5,73 C46.5,73 49,74 49,76 C49,78 46.5,79 43.5,79 L41,79 Z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,73 L54,70 L64,70 L64,73 L56,73 L56,75 L63,75 L63,77 L56,77 L56,79 L64,79 L64,82 L54,82 Z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65,70 L69,70 L72,74.5 L75,70 L79,70 L74,76 L79,82 L75,82 L72,77.5 L69,82 L65,82 L70,76 Z" />
 
 </vector>

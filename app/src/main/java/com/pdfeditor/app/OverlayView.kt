@@ -28,6 +28,7 @@ class OverlayView @JvmOverloads constructor(
     interface OnPlacementListener {
         fun onTextPlaced(x: Float, y: Float, text: String, textSize: Float)
         fun onSignaturePlaced(x: Float, y: Float, bitmap: Bitmap)
+        fun onTextPositionSelected(x: Float, y: Float)
     }
 
     private var placementMode = PlacementMode.NONE
@@ -67,6 +68,18 @@ class OverlayView @JvmOverloads constructor(
 
     fun getOverlayItems(): List<OverlayItem> = overlayItems.toList()
 
+    fun addTextAt(x: Float, y: Float, text: String, textSize: Float) {
+        val item = OverlayItem(
+            x = x, y = y,
+            type = PlacementMode.TEXT,
+            text = text,
+            textSize = textSize
+        )
+        overlayItems.add(item)
+        placementMode = PlacementMode.NONE
+        invalidate()
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN && placementMode != PlacementMode.NONE) {
             val x = event.x
@@ -74,14 +87,8 @@ class OverlayView @JvmOverloads constructor(
 
             when (placementMode) {
                 PlacementMode.TEXT -> {
-                    val item = OverlayItem(
-                        x = x, y = y,
-                        type = PlacementMode.TEXT,
-                        text = pendingText,
-                        textSize = pendingTextSize
-                    )
-                    overlayItems.add(item)
-                    listener?.onTextPlaced(x, y, pendingText, pendingTextSize)
+                    // Notify activity to show text dialog at this position
+                    listener?.onTextPositionSelected(x, y)
                 }
                 PlacementMode.SIGNATURE -> {
                     pendingSignature?.let { sig ->
@@ -93,11 +100,11 @@ class OverlayView @JvmOverloads constructor(
                         overlayItems.add(item)
                         listener?.onSignaturePlaced(x, y, sig)
                     }
+                    placementMode = PlacementMode.NONE
                 }
                 else -> {}
             }
 
-            placementMode = PlacementMode.NONE
             invalidate()
             return true
         }
