@@ -12,7 +12,6 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.github.chrisbanes.photoview.PhotoView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
