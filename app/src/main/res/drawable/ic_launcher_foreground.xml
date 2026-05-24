@@ -5,46 +5,46 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Green circle background -->
+    <!-- Outer green circle -->
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0" />
+        android:fillColor="#43A047"
+        android:pathData="M54,54m-38,0a38,38 0,1 1,76 0a38,38 0,1 1,-76 0" />
 
     <!-- Inner lighter circle -->
     <path
         android:fillColor="#66BB6A"
-        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
+        android:pathData="M54,54m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0" />
 
-    <!-- Stylized PDF page icon -->
+    <!-- White rounded square (paper) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M42,36 L60,36 L66,42 L66,72 L42,72 Z" />
+        android:pathData="M38,34 C38,32 39.5,30.5 41.5,30.5 L62,30.5 L70,38.5 L70,74 C70,76 68.5,77.5 66.5,77.5 L41.5,77.5 C39.5,77.5 38,76 38,74 Z" />
 
-    <!-- Page fold -->
+    <!-- Fold corner -->
     <path
-        android:fillColor="#E8F5E9"
-        android:pathData="M60,36 L60,42 L66,42 Z" />
+        android:fillColor="#C8E6C9"
+        android:pathData="M62,30.5 L62,38.5 L70,38.5 Z" />
 
-    <!-- "Dex" text on page - clean and bold -->
+    <!-- Green lines representing text -->
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M45,52 L45,60 L48,60 C50.5,60 52,58.5 52,56 C52,53.5 50.5,52 48,52 Z M47,54 L47.8,54 C49.3,54 50,54.8 50,56 C50,57.2 49.3,58 47.8,58 L47,58 Z" />
+        android:fillColor="#43A047"
+        android:pathData="M44,46 L64,46 L64,48.5 L44,48.5 Z" />
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M44,52 L60,52 L60,54 L44,54 Z" />
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M44,58 L62,58 L62,60 L44,60 Z" />
 
+    <!-- Pen/edit icon bottom right -->
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M53,52 L53,60 L58,60 L58,58.5 L55,58.5 L55,57 L57.5,57 L57.5,55.5 L55,55.5 L55,53.5 L58,53.5 L58,52 Z" />
-
-    <!-- "PDF" smaller below -->
+        android:fillColor="#2E7D32"
+        android:pathData="M60,64 L64,60 L68,64 L64,68 Z" />
     <path
-        android:fillColor="#388E3C"
-        android:pathData="M46,63 L46,68 L47.5,68 L47.5,66.5 L48.5,66.5 C49.8,66.5 50.5,65.8 50.5,64.8 C50.5,63.8 49.8,63 48.5,63 Z M47.5,64 L48.3,64 C48.8,64 49,64.3 49,64.8 C49,65.3 48.8,65.5 48.3,65.5 L47.5,65.5 Z" />
-
+        android:fillColor="#2E7D32"
+        android:pathData="M56,68 L60,64 L64,68 L60,72 Z" />
     <path
-        android:fillColor="#388E3C"
-        android:pathData="M51,63 L51,68 L52.5,68 L52.5,66.5 L53.5,66.5 C55.5,66.5 56.5,65.5 56.5,64.5 C56.5,63.5 55.5,63 54,63 Z M52.5,64 L53.5,64 C54.3,64 54.8,64.3 54.8,64.8 C54.8,65.2 54.3,65.5 53.5,65.5 L52.5,65.5 Z" />
-
-    <path
-        android:fillColor="#388E3C"
-        android:pathData="M57,63 L57,68 L58.5,68 L58.5,66 L60,66 L60,68 L61.5,68 L61.5,63 L60,63 L60,65 L58.5,65 L58.5,63 Z" />
+        android:fillColor="#1B5E20"
+        android:pathData="M54,74 L56,68 L60,72 Z" />
 
 </vector>

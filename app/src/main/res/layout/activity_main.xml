@@ -7,7 +7,6 @@
     android:background="@color/background"
     tools:context=".MainActivity">
 
-    <!-- Top Toolbar - Adobe Style -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="0dp"
@@ -20,7 +19,7 @@
         app:title="Dex PDF"
         app:titleTextColor="@color/on_primary" />
 
-    <!-- Action Buttons Bar -->
+    <!-- Toolbar with clear icon labels -->
     <HorizontalScrollView
         android:id="@+id/actionBar"
         android:layout_width="0dp"
@@ -37,158 +36,139 @@
             android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+            android:paddingHorizontal="4dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnOpen"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginEnd="4dp"
-                android:text="@string/open_file"
+                android:text="Apri"
                 android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 app:icon="@android:drawable/ic_menu_add"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAddText"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginHorizontal="4dp"
-                android:text="@string/add_text"
+                android:text="Testo"
                 android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 app:icon="@android:drawable/ic_menu_edit"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAddCheck"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginHorizontal="4dp"
-                android:text="X"
+                android:text="Spunta"
                 android:textColor="@color/primary"
-                android:textSize="14sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 app:icon="@android:drawable/checkbox_on_background"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSignature"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginHorizontal="4dp"
-                android:text="@string/add_signature"
+                android:text="Firma"
                 android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 app:icon="@android:drawable/ic_menu_myplaces"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnHighlight"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginHorizontal="4dp"
                 android:text="Evidenzia"
-                android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textColor="#FFC107"
+                android:textSize="11sp"
                 app:icon="@android:drawable/ic_menu_gallery"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="#FFC107" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEraser"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginHorizontal="4dp"
                 android:text="Gomma"
                 android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 app:icon="@android:drawable/ic_menu_delete"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary" />
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOcr"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="OCR"
+                android:textColor="@color/primary"
+                android:textSize="11sp"
+                app:icon="@android:drawable/ic_menu_view"
+                app:iconGravity="top"
+                app:iconSize="20dp"
+                app:iconTint="@color/primary" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginHorizontal="4dp"
-                android:text="@string/save"
+                android:text="Salva"
                 android:textColor="@color/accent"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 app:icon="@android:drawable/ic_menu_save"
-                app:iconSize="18dp"
+                app:iconGravity="top"
+                app:iconSize="20dp"
                 app:iconTint="@color/accent" />
 
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- PDF View Area with Zoom -->
-    <com.pdfeditor.app.ZoomableFrameLayout
+    <!-- PDF Area: PhotoView for zoom + Overlay on top -->
+    <FrameLayout
         android:id="@+id/pdfContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/background"
+        android:background="#404040"
         app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/actionBar">
 
-        <ImageView
+        <com.github.chrisbanes.photoview.PhotoView
             android:id="@+id/pdfPageView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="PDF Page"
             android:scaleType="fitCenter" />
 
-        <!-- Overlay per testo e firma -->
         <com.pdfeditor.app.OverlayView
             android:id="@+id/overlayView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <!-- Empty state -->
         <LinearLayout
             android:id="@+id/emptyState"
             android:layout_width="wrap_content"
@@ -201,7 +181,7 @@
             <ImageView
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:alpha="0.4"
+                android:alpha="0.6"
                 android:contentDescription="No file"
                 android:src="@android:drawable/ic_menu_agenda" />
 
@@ -209,13 +189,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="@string/no_file_open"
-                android:textColor="@color/text_hint"
+                android:text="Tocca Apri per caricare un PDF"
+                android:textColor="#FFFFFF"
                 android:textSize="16sp" />
         </LinearLayout>
-    </com.pdfeditor.app.ZoomableFrameLayout>
+    </FrameLayout>
 
-    <!-- Text Input Bar (visible only in text mode) -->
+    <!-- Text Input Bar -->
     <LinearLayout
         android:id="@+id/textInputBar"
         android:layout_width="0dp"
@@ -249,10 +229,9 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Annulla"
             android:src="@android:drawable/ic_menu_close_clear_cancel" />
-
     </LinearLayout>
 
-    <!-- Bottom Navigation Bar -->
+    <!-- Bottom page navigation -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"

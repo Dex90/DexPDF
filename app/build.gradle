@@ -76,4 +76,10 @@ dependencies {
 
     // Image processing
     implementation 'androidx.palette:palette-ktx:1.0.0'
+
+    // PhotoView for smooth PDF zoom (like Google Photos/Adobe)
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+
+    // Google ML Kit Text Recognition (OCR)
+    implementation 'com.google.mlkit:text-recognition:16.0.0'
 }
