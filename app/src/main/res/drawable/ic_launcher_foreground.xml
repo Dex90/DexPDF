@@ -5,50 +5,46 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Paper/document background -->
-    <path
-        android:fillColor="#F5F5F5"
-        android:pathData="M28,18 L72,18 L80,26 L80,90 L28,90 Z"
-        android:strokeColor="#E0E0E0"
-        android:strokeWidth="1" />
-
-    <!-- Folded corner -->
-    <path
-        android:fillColor="#E0E0E0"
-        android:pathData="M72,18 L72,26 L80,26 Z" />
-
-    <!-- Pen/pencil diagonal -->
+    <!-- Green circle background -->
     <path
         android:fillColor="#4CAF50"
-        android:pathData="M62,32 L68,26 L72,30 L66,36 Z" />
+        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0" />
+
+    <!-- Inner lighter circle -->
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
+
+    <!-- Stylized PDF page icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,36 L60,36 L66,42 L66,72 L42,72 Z" />
+
+    <!-- Page fold -->
+    <path
+        android:fillColor="#E8F5E9"
+        android:pathData="M60,36 L60,42 L66,42 Z" />
+
+    <!-- "Dex" text on page - clean and bold -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M45,52 L45,60 L48,60 C50.5,60 52,58.5 52,56 C52,53.5 50.5,52 48,52 Z M47,54 L47.8,54 C49.3,54 50,54.8 50,56 C50,57.2 49.3,58 47.8,58 L47,58 Z" />
+
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M53,52 L53,60 L58,60 L58,58.5 L55,58.5 L55,57 L57.5,57 L57.5,55.5 L55,55.5 L55,53.5 L58,53.5 L58,52 Z" />
+
+    <!-- "PDF" smaller below -->
     <path
         android:fillColor="#388E3C"
-        android:pathData="M42,52 L62,32 L66,36 L46,56 Z" />
-    <path
-        android:fillColor="#2E7D32"
-        android:pathData="M40,58 L42,52 L46,56 Z" />
+        android:pathData="M46,63 L46,68 L47.5,68 L47.5,66.5 L48.5,66.5 C49.8,66.5 50.5,65.8 50.5,64.8 C50.5,63.8 49.8,63 48.5,63 Z M47.5,64 L48.3,64 C48.8,64 49,64.3 49,64.8 C49,65.3 48.8,65.5 48.3,65.5 L47.5,65.5 Z" />
 
-    <!-- Signature scribble line -->
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#4CAF50"
-        android:strokeWidth="2"
-        android:pathData="M36,68 C40,64 44,72 48,66 C52,60 56,70 60,66 C64,62 68,68 72,64" />
+        android:fillColor="#388E3C"
+        android:pathData="M51,63 L51,68 L52.5,68 L52.5,66.5 L53.5,66.5 C55.5,66.5 56.5,65.5 56.5,64.5 C56.5,63.5 55.5,63 54,63 Z M52.5,64 L53.5,64 C54.3,64 54.8,64.3 54.8,64.8 C54.8,65.2 54.3,65.5 53.5,65.5 L52.5,65.5 Z" />
 
-    <!-- "Dex" text -->
     <path
-        android:fillColor="#4CAF50"
-        android:pathData="M34,80 L34,88 L38,88 C41,88 43,86.5 43,84 C43,81.5 41,80 38,80 Z M36.5,82 L37.5,82 C39.5,82 40.5,82.8 40.5,84 C40.5,85.2 39.5,86 37.5,86 L36.5,86 Z" />
-    <path
-        android:fillColor="#4CAF50"
-        android:pathData="M45,80 L45,88 L52,88 L52,86 L47.5,86 L47.5,85 L51,85 L51,83 L47.5,83 L47.5,82 L52,82 L52,80 Z" />
-    <path
-        android:fillColor="#4CAF50"
-        android:pathData="M53,80 L56,80 L58,83 L60,80 L63,80 L59.5,84 L63,88 L60,88 L58,85 L56,88 L53,88 L56.5,84 Z" />
-
-    <!-- "PDF" small text -->
-    <path
-        android:fillColor="#757575"
-        android:pathData="M65,82 L65,88 L67,88 L67,86 L68.5,86 C70,86 71,85 71,83.5 C71,82 70,82 68.5,82 Z M67,83.5 L68,83.5 C68.8,83.5 69,83.8 69,84 C69,84.2 68.8,84.5 68,84.5 L67,84.5 Z" />
+        android:fillColor="#388E3C"
+        android:pathData="M57,63 L57,68 L58.5,68 L58.5,66 L60,66 L60,68 L61.5,68 L61.5,63 L60,63 L60,65 L58.5,65 L58.5,63 Z" />
 
 </vector>

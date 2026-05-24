@@ -116,6 +116,15 @@ class MainActivity : AppCompatActivity() {
             showHighlightColorPicker()
         }
 
+        binding.btnEraser.setOnClickListener {
+            if (currentPdfUri == null && currentPdfFile == null) {
+                showToast(getString(R.string.no_file_open))
+                return@setOnClickListener
+            }
+            binding.overlayView.setPlacementMode(OverlayView.PlacementMode.ERASER)
+            showToast("Disegna sopra il testo da cancellare")
+        }
+
         binding.btnSave.setOnClickListener {
             savePdf()
         }

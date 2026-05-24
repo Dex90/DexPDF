@@ -14,7 +14,7 @@ class OverlayView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     enum class PlacementMode {
-        NONE, TEXT, SIGNATURE, HIGHLIGHT
+        NONE, TEXT, SIGNATURE, HIGHLIGHT, ERASER
     }
 
     data class OverlayItem(
@@ -185,8 +185,8 @@ class OverlayView @JvmOverloads constructor(
                 val x = event.x
                 val y = event.y
 
-                // If in highlight mode, start drawing
-                if (placementMode == PlacementMode.HIGHLIGHT) {
+                // If in highlight or eraser mode, start drawing
+                if (placementMode == PlacementMode.HIGHLIGHT || placementMode == PlacementMode.ERASER) {
                     isDrawingHighlight = true
                     currentHighlightPath = Path()
                     currentHighlightPath!!.moveTo(x, y)
@@ -254,12 +254,12 @@ class OverlayView @JvmOverloads constructor(
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 if (isDrawingHighlight && currentHighlightPath != null) {
-                    // Save the highlight as an overlay item
+                    // Save as highlight or eraser overlay
                     val item = OverlayItem(
                         x = 0f, y = 0f,
-                        type = PlacementMode.HIGHLIGHT,
+                        type = placementMode,
                         highlightPath = currentHighlightPath,
-                        highlightColor = highlightColor
+                        highlightColor = if (placementMode == PlacementMode.ERASER) Color.WHITE else highlightColor
                     )
                     overlayItems.add(item)
                     isDrawingHighlight = false
@@ -301,6 +301,14 @@ class OverlayView @JvmOverloads constructor(
                         canvas.drawPath(path, highlightPaint)
                     }
                 }
+                PlacementMode.ERASER -> {
+                    item.highlightPath?.let { path ->
+                        highlightPaint.color = Color.WHITE
+                        highlightPaint.strokeWidth = 40f
+                        canvas.drawPath(path, highlightPaint)
+                        highlightPaint.strokeWidth = 30f
+                    }
+                }
                 else -> {}
             }
 
@@ -320,9 +328,15 @@ class OverlayView @JvmOverloads constructor(
             }
         }
 
-        // Draw current highlight being drawn
+        // Draw current highlight/eraser being drawn
         currentHighlightPath?.let { path ->
-            highlightPaint.color = Color.argb(100, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            if (placementMode == PlacementMode.ERASER) {
+                highlightPaint.color = Color.WHITE
+                highlightPaint.strokeWidth = 40f
+            } else {
+                highlightPaint.color = Color.argb(100, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+                highlightPaint.strokeWidth = 30f
+            }
             canvas.drawPath(path, highlightPaint)
         }
 

@@ -131,6 +131,24 @@
                 android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEraser"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginHorizontal="4dp"
+                android:text="Gomma"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                app:icon="@android:drawable/ic_menu_delete"
+                app:iconSize="18dp"
+                app:iconTint="@color/primary" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="@color/divider" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
@@ -146,8 +164,8 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- PDF View Area -->
-    <FrameLayout
+    <!-- PDF View Area with Zoom -->
+    <com.pdfeditor.app.ZoomableFrameLayout
         android:id="@+id/pdfContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -195,7 +213,7 @@
                 android:textColor="@color/text_hint"
                 android:textSize="16sp" />
         </LinearLayout>
-    </FrameLayout>
+    </com.pdfeditor.app.ZoomableFrameLayout>
 
     <!-- Text Input Bar (visible only in text mode) -->
     <LinearLayout
