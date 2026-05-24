@@ -51,6 +51,11 @@ class OverlayView @JvmOverloads constructor(
     private var currentPath: Path? = null
     private var highlightColor: Int = Color.YELLOW
 
+    // PhotoView state tracking
+    private var photoViewScale = 1f
+    private var photoViewOffsetX = 0f
+    private var photoViewOffsetY = 0f
+
     private val textPaint = Paint().apply {
         color = Color.BLACK
         isAntiAlias = true
@@ -98,6 +103,13 @@ class OverlayView @JvmOverloads constructor(
         placementMode = mode
         pendingSignature = signatureBitmap
         selectedItem = null
+        invalidate()
+    }
+
+    fun setPhotoViewState(scale: Float, offsetX: Float, offsetY: Float) {
+        this.photoViewScale = scale
+        this.photoViewOffsetX = offsetX
+        this.photoViewOffsetY = offsetY
         invalidate()
     }
 
