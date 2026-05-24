@@ -130,6 +130,34 @@
                 app:iconSize="20dp"
                 app:iconTint="@color/primary" />
 
+            <!-- Undo -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnUndo"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Indietro"
+                android:textColor="@color/primary"
+                android:textSize="11sp"
+                app:icon="@android:drawable/ic_menu_revert"
+                app:iconGravity="top"
+                app:iconSize="20dp"
+                app:iconTint="@color/primary" />
+
+            <!-- Redo -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRedo"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="Avanti"
+                android:textColor="@color/primary"
+                android:textSize="11sp"
+                app:icon="@android:drawable/ic_menu_rotate"
+                app:iconGravity="top"
+                app:iconSize="20dp"
+                app:iconTint="@color/primary" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
                 style="@style/Widget.MaterialComponents.Button.TextButton.Icon"

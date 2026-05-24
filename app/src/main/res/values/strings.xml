@@ -26,4 +26,13 @@
     <string name="page_indicator">Pagina %1$d di %2$d</string>
     <string name="delete_signature">Elimina</string>
     <string name="add_check">X</string>
+    <string name="undo">Indietro</string>
+    <string name="redo">Avanti</string>
+    <string name="highlight">Evidenzia</string>
+    <string name="eraser">Gomma</string>
+    <string name="ocr">OCR</string>
+    <string name="quick_save">Salvataggio rapido</string>
+    <string name="save_as">Salva con nome</string>
+    <string name="cancel">Annulla</string>
+    <string name="saved_to_downloads">Salvato nei Download!</string>
 </resources>
