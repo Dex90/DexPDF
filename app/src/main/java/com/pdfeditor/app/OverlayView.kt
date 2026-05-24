@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.view.ScaleGestureDetector
 import android.view.View
 
 class OverlayView @JvmOverloads constructor(
@@ -36,23 +35,20 @@ class OverlayView @JvmOverloads constructor(
     }
 
     private var placementMode = PlacementMode.NONE
-    private var pendingText: String = ""
-    private var pendingTextSize: Float = 14f
     private var pendingSignature: Bitmap? = null
     private val overlayItems = mutableListOf<OverlayItem>()
     private var listener: OnPlacementListener? = null
 
-    // Drag & resize state
+    // Selection and interaction
     private var selectedItem: OverlayItem? = null
     private var isDragging = false
+    private var isResizing = false
     private var dragOffsetX = 0f
     private var dragOffsetY = 0f
-    private var lastTouchX = 0f
-    private var lastTouchY = 0f
 
-    // Highlight drawing state
-    private var isDrawingHighlight = false
-    private var currentHighlightPath: Path? = null
+    // Drawing state (highlight/eraser)
+    private var isDrawing = false
+    private var currentPath: Path? = null
     private var highlightColor: Int = Color.YELLOW
 
     private val textPaint = Paint().apply {
@@ -62,10 +58,10 @@ class OverlayView @JvmOverloads constructor(
     }
 
     private val selectionPaint = Paint().apply {
-        color = Color.argb(100, 76, 175, 80) // green selection
+        color = Color.argb(180, 76, 175, 80)
         style = Paint.Style.STROKE
-        strokeWidth = 3f
-        pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
+        strokeWidth = 2f
+        pathEffect = DashPathEffect(floatArrayOf(8f, 8f), 0f)
     }
 
     private val resizeHandlePaint = Paint().apply {
@@ -75,61 +71,41 @@ class OverlayView @JvmOverloads constructor(
 
     private val highlightPaint = Paint().apply {
         style = Paint.Style.STROKE
-        strokeWidth = 30f
+        strokeWidth = 28f
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
         isAntiAlias = true
     }
 
+    private val eraserPaint = Paint().apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 35f
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        isAntiAlias = true
+    }
+
+    private val HANDLE_RADIUS = 20f
+
     fun setHighlightColor(color: Int) {
         highlightColor = color
     }
 
-    private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-        override fun onScale(detector: ScaleGestureDetector): Boolean {
-            selectedItem?.let { item ->
-                item.scale *= detector.scaleFactor
-                item.scale = item.scale.coerceIn(0.3f, 5f)
-                invalidate()
-                return true
-            }
-            return false
-        }
-    })
+    fun setOnPlacementListener(l: OnPlacementListener) { listener = l }
 
-    fun setOnPlacementListener(listener: OnPlacementListener) {
-        this.listener = listener
-    }
-
-    fun setPlacementMode(
-        mode: PlacementMode,
-        text: String = "",
-        textSize: Float = 14f,
-        signatureBitmap: Bitmap? = null
-    ) {
+    fun setPlacementMode(mode: PlacementMode, text: String = "", textSize: Float = 14f, signatureBitmap: Bitmap? = null) {
         placementMode = mode
-        pendingText = text
-        pendingTextSize = textSize
         pendingSignature = signatureBitmap
         selectedItem = null
         invalidate()
     }
 
-    fun clearOverlays() {
-        overlayItems.clear()
-        selectedItem = null
-        invalidate()
-    }
-
+    fun clearOverlays() { overlayItems.clear(); selectedItem = null; invalidate() }
     fun getOverlayItems(): List<OverlayItem> = overlayItems.toList()
 
     fun addTextAt(x: Float, y: Float, text: String, textSize: Float) {
-        val item = OverlayItem(
-            x = x, y = y,
-            type = PlacementMode.TEXT,
-            text = text,
-            textSize = textSize
-        )
+        val item = OverlayItem(x = x, y = y, type = PlacementMode.TEXT, text = text, textSize = textSize)
         overlayItems.add(item)
         selectedItem = item
         placementMode = PlacementMode.NONE
@@ -137,137 +113,140 @@ class OverlayView @JvmOverloads constructor(
     }
 
     private fun getItemBounds(item: OverlayItem): RectF {
+        val density = resources.displayMetrics.density
         return when (item.type) {
             PlacementMode.TEXT -> {
-                val size = item.textSize * resources.displayMetrics.density * item.scale
+                val size = item.textSize * density * item.scale
                 textPaint.textSize = size
-                val textWidth = textPaint.measureText(item.text ?: "")
-                val textHeight = size
-                RectF(
-                    item.x - 10f,
-                    item.y - textHeight - 5f,
-                    item.x + textWidth + 10f,
-                    item.y + 10f
-                )
+                val w = textPaint.measureText(item.text ?: "")
+                RectF(item.x - 8f, item.y - size - 4f, item.x + w + 8f, item.y + 8f)
             }
             PlacementMode.SIGNATURE -> {
                 item.bitmap?.let { bmp ->
-                    val sigWidth = 150f * resources.displayMetrics.density * item.scale
-                    val sigHeight = sigWidth * bmp.height / bmp.width
-                    RectF(
-                        item.x - sigWidth / 2,
-                        item.y - sigHeight / 2,
-                        item.x + sigWidth / 2,
-                        item.y + sigHeight / 2
-                    )
+                    val sigW = 150f * density * item.scale
+                    val sigH = sigW * bmp.height / bmp.width
+                    RectF(item.x - sigW/2, item.y - sigH/2, item.x + sigW/2, item.y + sigH/2)
                 } ?: RectF()
             }
             else -> RectF()
         }
     }
 
+    private fun isOnResizeHandle(item: OverlayItem, x: Float, y: Float): Boolean {
+        val bounds = getItemBounds(item)
+        val hx = bounds.right
+        val hy = bounds.bottom
+        return (x - hx) * (x - hx) + (y - hy) * (y - hy) < HANDLE_RADIUS * HANDLE_RADIUS * 4
+    }
+
     private fun findItemAt(x: Float, y: Float): OverlayItem? {
-        // Search in reverse order (top items first)
         for (i in overlayItems.indices.reversed()) {
-            val bounds = getItemBounds(overlayItems[i])
-            if (bounds.contains(x, y)) {
-                return overlayItems[i]
+            val item = overlayItems[i]
+            if (item.type == PlacementMode.TEXT || item.type == PlacementMode.SIGNATURE) {
+                if (getItemBounds(item).contains(x, y)) return item
             }
         }
         return null
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        scaleDetector.onTouchEvent(event)
+        val x = event.x
+        val y = event.y
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                val x = event.x
-                val y = event.y
-
-                // If in highlight or eraser mode, start drawing
+                // Drawing modes (highlight/eraser)
                 if (placementMode == PlacementMode.HIGHLIGHT || placementMode == PlacementMode.ERASER) {
-                    isDrawingHighlight = true
-                    currentHighlightPath = Path()
-                    currentHighlightPath!!.moveTo(x, y)
+                    isDrawing = true
+                    currentPath = Path().apply { moveTo(x, y) }
                     invalidate()
                     return true
                 }
 
-                // If in placement mode, place new item
-                if (placementMode != PlacementMode.NONE) {
-                    when (placementMode) {
-                        PlacementMode.TEXT -> {
-                            listener?.onTextPositionSelected(x, y)
-                        }
-                        PlacementMode.SIGNATURE -> {
-                            pendingSignature?.let { sig ->
-                                val item = OverlayItem(
-                                    x = x, y = y,
-                                    type = PlacementMode.SIGNATURE,
-                                    bitmap = sig
-                                )
-                                overlayItems.add(item)
-                                selectedItem = item
-                                listener?.onSignaturePlaced(x, y, sig)
-                            }
-                            placementMode = PlacementMode.NONE
-                        }
-                        else -> {}
+                // Placement modes
+                if (placementMode == PlacementMode.TEXT) {
+                    listener?.onTextPositionSelected(x, y)
+                    return true
+                }
+                if (placementMode == PlacementMode.SIGNATURE) {
+                    pendingSignature?.let { sig ->
+                        val item = OverlayItem(x = x, y = y, type = PlacementMode.SIGNATURE, bitmap = sig)
+                        overlayItems.add(item)
+                        selectedItem = item
+                        listener?.onSignaturePlaced(x, y, sig)
+                    }
+                    placementMode = PlacementMode.NONE
+                    invalidate()
+                    return true
+                }
+
+                // Check resize handle first
+                selectedItem?.let { sel ->
+                    if (isOnResizeHandle(sel, x, y)) {
+                        isResizing = true
+                        invalidate()
+                        return true
+                    }
+                }
+
+                // Select/drag
+                val hit = findItemAt(x, y)
+                if (hit != null) {
+                    selectedItem = hit
+                    isDragging = true
+                    dragOffsetX = x - hit.x
+                    dragOffsetY = y - hit.y
+                    invalidate()
+                    return true
+                }
+
+                selectedItem = null
+                invalidate()
+                return false // Let parent handle (zoom/pan)
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (isDrawing && currentPath != null) {
+                    currentPath!!.lineTo(x, y)
+                    invalidate()
+                    return true
+                }
+                if (isResizing && selectedItem != null) {
+                    val bounds = getItemBounds(selectedItem!!)
+                    val centerX = (bounds.left + bounds.right) / 2
+                    val centerY = (bounds.top + bounds.bottom) / 2
+                    val dist = Math.sqrt(((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY)).toDouble()).toFloat()
+                    val originalDist = Math.sqrt(((bounds.right - centerX) * (bounds.right - centerX) + (bounds.bottom - centerY) * (bounds.bottom - centerY)).toDouble()).toFloat()
+                    if (originalDist > 0) {
+                        selectedItem!!.scale = (selectedItem!!.scale * dist / originalDist).coerceIn(0.3f, 5f)
                     }
                     invalidate()
                     return true
                 }
-
-                // Otherwise, try to select/drag existing item
-                val hitItem = findItemAt(x, y)
-                if (hitItem != null) {
-                    selectedItem = hitItem
-                    isDragging = true
-                    dragOffsetX = x - hitItem.x
-                    dragOffsetY = y - hitItem.y
-                    invalidate()
-                    return true
-                } else {
-                    selectedItem = null
-                    invalidate()
-                }
-
-                lastTouchX = x
-                lastTouchY = y
-                return true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (isDrawingHighlight && currentHighlightPath != null) {
-                    currentHighlightPath!!.lineTo(event.x, event.y)
-                    invalidate()
-                    return true
-                }
-                if (isDragging && selectedItem != null && event.pointerCount == 1) {
-                    selectedItem!!.x = event.x - dragOffsetX
-                    selectedItem!!.y = event.y - dragOffsetY
+                if (isDragging && selectedItem != null) {
+                    selectedItem!!.x = x - dragOffsetX
+                    selectedItem!!.y = y - dragOffsetY
                     invalidate()
                     return true
                 }
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                if (isDrawingHighlight && currentHighlightPath != null) {
-                    // Save as highlight or eraser overlay
+                if (isDrawing && currentPath != null) {
                     val item = OverlayItem(
                         x = 0f, y = 0f,
                         type = placementMode,
-                        highlightPath = currentHighlightPath,
+                        highlightPath = currentPath,
                         highlightColor = if (placementMode == PlacementMode.ERASER) Color.WHITE else highlightColor
                     )
                     overlayItems.add(item)
-                    isDrawingHighlight = false
-                    currentHighlightPath = null
+                    isDrawing = false
+                    currentPath = null
                     invalidate()
                     return true
                 }
                 isDragging = false
+                isResizing = false
             }
         }
         return super.onTouchEvent(event)
@@ -284,69 +263,44 @@ class OverlayView @JvmOverloads constructor(
                 }
                 PlacementMode.SIGNATURE -> {
                     item.bitmap?.let { bmp ->
-                        val sigWidth = 150f * resources.displayMetrics.density * item.scale
-                        val sigHeight = sigWidth * bmp.height / bmp.width
-                        val destRect = RectF(
-                            item.x - sigWidth / 2,
-                            item.y - sigHeight / 2,
-                            item.x + sigWidth / 2,
-                            item.y + sigHeight / 2
-                        )
-                        canvas.drawBitmap(bmp, null, destRect, null)
+                        val density = resources.displayMetrics.density
+                        val sigW = 150f * density * item.scale
+                        val sigH = sigW * bmp.height / bmp.width
+                        val rect = RectF(item.x - sigW/2, item.y - sigH/2, item.x + sigW/2, item.y + sigH/2)
+                        canvas.drawBitmap(bmp, null, rect, null)
                     }
                 }
                 PlacementMode.HIGHLIGHT -> {
                     item.highlightPath?.let { path ->
-                        highlightPaint.color = Color.argb(100, Color.red(item.highlightColor), Color.green(item.highlightColor), Color.blue(item.highlightColor))
+                        highlightPaint.color = Color.argb(80, Color.red(item.highlightColor), Color.green(item.highlightColor), Color.blue(item.highlightColor))
                         canvas.drawPath(path, highlightPaint)
                     }
                 }
                 PlacementMode.ERASER -> {
                     item.highlightPath?.let { path ->
-                        highlightPaint.color = Color.WHITE
-                        highlightPaint.strokeWidth = 40f
-                        canvas.drawPath(path, highlightPaint)
-                        highlightPaint.strokeWidth = 30f
+                        canvas.drawPath(path, eraserPaint)
                     }
                 }
                 else -> {}
             }
 
-            // Draw selection box around selected item
-            if (item == selectedItem && item.type != PlacementMode.HIGHLIGHT) {
+            // Selection indicator
+            if (item == selectedItem && (item.type == PlacementMode.TEXT || item.type == PlacementMode.SIGNATURE)) {
                 val bounds = getItemBounds(item)
                 canvas.drawRect(bounds, selectionPaint)
-
-                // Draw resize handle (bottom-right corner)
-                val handleSize = 16f
-                canvas.drawCircle(
-                    bounds.right,
-                    bounds.bottom,
-                    handleSize,
-                    resizeHandlePaint
-                )
+                // Resize handle
+                canvas.drawCircle(bounds.right, bounds.bottom, HANDLE_RADIUS, resizeHandlePaint)
             }
         }
 
-        // Draw current highlight/eraser being drawn
-        currentHighlightPath?.let { path ->
+        // Current drawing path
+        currentPath?.let { path ->
             if (placementMode == PlacementMode.ERASER) {
-                highlightPaint.color = Color.WHITE
-                highlightPaint.strokeWidth = 40f
+                canvas.drawPath(path, eraserPaint)
             } else {
-                highlightPaint.color = Color.argb(100, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
-                highlightPaint.strokeWidth = 30f
+                highlightPaint.color = Color.argb(80, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+                canvas.drawPath(path, highlightPaint)
             }
-            canvas.drawPath(path, highlightPaint)
-        }
-
-        // Draw placement hint overlay
-        if (placementMode != PlacementMode.NONE && placementMode != PlacementMode.HIGHLIGHT) {
-            val hintPaint = Paint().apply {
-                color = Color.argb(40, 76, 175, 80)
-                style = Paint.Style.FILL
-            }
-            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), hintPaint)
         }
     }
 }
