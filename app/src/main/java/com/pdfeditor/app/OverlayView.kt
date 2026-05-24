@@ -14,7 +14,7 @@ class OverlayView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     enum class PlacementMode {
-        NONE, TEXT, SIGNATURE
+        NONE, TEXT, SIGNATURE, HIGHLIGHT
     }
 
     data class OverlayItem(
@@ -24,7 +24,9 @@ class OverlayView @JvmOverloads constructor(
         val text: String? = null,
         var textSize: Float = 14f,
         val bitmap: Bitmap? = null,
-        var scale: Float = 1f
+        var scale: Float = 1f,
+        var highlightPath: Path? = null,
+        var highlightColor: Int = Color.YELLOW
     )
 
     interface OnPlacementListener {
@@ -48,6 +50,11 @@ class OverlayView @JvmOverloads constructor(
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
+    // Highlight drawing state
+    private var isDrawingHighlight = false
+    private var currentHighlightPath: Path? = null
+    private var highlightColor: Int = Color.YELLOW
+
     private val textPaint = Paint().apply {
         color = Color.BLACK
         isAntiAlias = true
@@ -64,6 +71,18 @@ class OverlayView @JvmOverloads constructor(
     private val resizeHandlePaint = Paint().apply {
         color = Color.rgb(76, 175, 80)
         style = Paint.Style.FILL
+    }
+
+    private val highlightPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 30f
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        isAntiAlias = true
+    }
+
+    fun setHighlightColor(color: Int) {
+        highlightColor = color
     }
 
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -166,6 +185,15 @@ class OverlayView @JvmOverloads constructor(
                 val x = event.x
                 val y = event.y
 
+                // If in highlight mode, start drawing
+                if (placementMode == PlacementMode.HIGHLIGHT) {
+                    isDrawingHighlight = true
+                    currentHighlightPath = Path()
+                    currentHighlightPath!!.moveTo(x, y)
+                    invalidate()
+                    return true
+                }
+
                 // If in placement mode, place new item
                 if (placementMode != PlacementMode.NONE) {
                     when (placementMode) {
@@ -211,6 +239,11 @@ class OverlayView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_MOVE -> {
+                if (isDrawingHighlight && currentHighlightPath != null) {
+                    currentHighlightPath!!.lineTo(event.x, event.y)
+                    invalidate()
+                    return true
+                }
                 if (isDragging && selectedItem != null && event.pointerCount == 1) {
                     selectedItem!!.x = event.x - dragOffsetX
                     selectedItem!!.y = event.y - dragOffsetY
@@ -220,6 +253,20 @@ class OverlayView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (isDrawingHighlight && currentHighlightPath != null) {
+                    // Save the highlight as an overlay item
+                    val item = OverlayItem(
+                        x = 0f, y = 0f,
+                        type = PlacementMode.HIGHLIGHT,
+                        highlightPath = currentHighlightPath,
+                        highlightColor = highlightColor
+                    )
+                    overlayItems.add(item)
+                    isDrawingHighlight = false
+                    currentHighlightPath = null
+                    invalidate()
+                    return true
+                }
                 isDragging = false
             }
         }
@@ -248,11 +295,17 @@ class OverlayView @JvmOverloads constructor(
                         canvas.drawBitmap(bmp, null, destRect, null)
                     }
                 }
+                PlacementMode.HIGHLIGHT -> {
+                    item.highlightPath?.let { path ->
+                        highlightPaint.color = Color.argb(100, Color.red(item.highlightColor), Color.green(item.highlightColor), Color.blue(item.highlightColor))
+                        canvas.drawPath(path, highlightPaint)
+                    }
+                }
                 else -> {}
             }
 
             // Draw selection box around selected item
-            if (item == selectedItem) {
+            if (item == selectedItem && item.type != PlacementMode.HIGHLIGHT) {
                 val bounds = getItemBounds(item)
                 canvas.drawRect(bounds, selectionPaint)
 
@@ -267,8 +320,14 @@ class OverlayView @JvmOverloads constructor(
             }
         }
 
+        // Draw current highlight being drawn
+        currentHighlightPath?.let { path ->
+            highlightPaint.color = Color.argb(100, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            canvas.drawPath(path, highlightPaint)
+        }
+
         // Draw placement hint overlay
-        if (placementMode != PlacementMode.NONE) {
+        if (placementMode != PlacementMode.NONE && placementMode != PlacementMode.HIGHLIGHT) {
             val hintPaint = Paint().apply {
                 color = Color.argb(40, 76, 175, 80)
                 style = Paint.Style.FILL

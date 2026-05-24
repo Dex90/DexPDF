@@ -76,6 +76,25 @@
                 android:background="@color/divider" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddCheck"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginHorizontal="4dp"
+                android:text="X"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:icon="@android:drawable/checkbox_on_background"
+                app:iconSize="18dp"
+                app:iconTint="@color/primary" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="@color/divider" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSignature"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
@@ -87,6 +106,24 @@
                 app:icon="@android:drawable/ic_menu_myplaces"
                 app:iconSize="18dp"
                 app:iconTint="@color/primary" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="@color/divider" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnHighlight"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginHorizontal="4dp"
+                android:text="Evidenzia"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                app:icon="@android:drawable/ic_menu_gallery"
+                app:iconSize="18dp"
+                app:iconTint="#FFC107" />
 
             <View
                 android:layout_width="1dp"

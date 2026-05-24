@@ -3,6 +3,7 @@ package com.pdfeditor.app
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Bundle
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingText: String = ""
     private var pendingTextSize: Float = 14f
     private var pendingSignatureBitmap: Bitmap? = null
+    private var pendingCheckMark = false
 
     private val openFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -86,12 +88,32 @@ class MainActivity : AppCompatActivity() {
             cancelTextMode()
         }
 
+        binding.btnAddCheck.setOnClickListener {
+            if (currentPdfUri == null && currentPdfFile == null) {
+                showToast(getString(R.string.no_file_open))
+                return@setOnClickListener
+            }
+            // Place an "X" mark directly - enable placement mode
+            isAddingText = true
+            binding.overlayView.setPlacementMode(OverlayView.PlacementMode.TEXT)
+            pendingCheckMark = true
+            showToast("Tocca dove vuoi mettere la X")
+        }
+
         binding.btnSignature.setOnClickListener {
             if (currentPdfUri == null && currentPdfFile == null) {
                 showToast(getString(R.string.no_file_open))
                 return@setOnClickListener
             }
             showSignatureDialog()
+        }
+
+        binding.btnHighlight.setOnClickListener {
+            if (currentPdfUri == null && currentPdfFile == null) {
+                showToast(getString(R.string.no_file_open))
+                return@setOnClickListener
+            }
+            showHighlightColorPicker()
         }
 
         binding.btnSave.setOnClickListener {
@@ -125,14 +147,22 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onTextPositionSelected(x: Float, y: Float) {
-                // User tapped the PDF - place text directly from input bar
-                val text = binding.editTextDirect.text.toString()
-                if (text.isNotBlank()) {
-                    binding.overlayView.addTextAt(x, y, text, 14f)
-                    // Clear input but keep mode active for more text
-                    binding.editTextDirect.text?.clear()
+                if (pendingCheckMark) {
+                    // Place X mark directly
+                    binding.overlayView.addTextAt(x, y, "X", 18f)
+                    pendingCheckMark = false
+                    binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
+                    isAddingText = false
                 } else {
-                    showToast("Scrivi prima il testo nella barra in basso")
+                    // User tapped the PDF - place text directly from input bar
+                    val text = binding.editTextDirect.text.toString()
+                    if (text.isNotBlank()) {
+                        binding.overlayView.addTextAt(x, y, text, 14f)
+                        // Clear input but keep mode active for more text
+                        binding.editTextDirect.text?.clear()
+                    } else {
+                        showToast("Scrivi prima il testo nella barra in basso")
+                    }
                 }
             }
         })
@@ -140,9 +170,31 @@ class MainActivity : AppCompatActivity() {
 
     private fun cancelTextMode() {
         isAddingText = false
+        pendingCheckMark = false
         binding.textInputBar.visibility = View.GONE
         binding.editTextDirect.text?.clear()
         binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
+    }
+
+    private fun showHighlightColorPicker() {
+        val colors = arrayOf("Giallo", "Verde", "Rosa", "Azzurro", "Arancione")
+        val colorValues = intArrayOf(
+            android.graphics.Color.YELLOW,
+            android.graphics.Color.rgb(76, 175, 80),
+            android.graphics.Color.rgb(233, 30, 99),
+            android.graphics.Color.rgb(3, 169, 244),
+            android.graphics.Color.rgb(255, 152, 0)
+        )
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Scegli colore evidenziatore")
+            .setItems(colors) { _, which ->
+                binding.overlayView.setHighlightColor(colorValues[which])
+                binding.overlayView.setPlacementMode(OverlayView.PlacementMode.HIGHLIGHT)
+                showToast("Disegna con il dito per evidenziare")
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
     }
 
     private fun handleIncomingIntent(intent: Intent) {
