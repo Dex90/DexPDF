@@ -10,10 +10,8 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
-import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
-import java.io.ByteArrayOutputStream
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import java.io.File
-import java.io.FileOutputStream
 
 object PdfModifier {
 
@@ -50,7 +48,7 @@ object PdfModifier {
                 }
                 OverlayView.PlacementMode.SIGNATURE -> {
                     item.bitmap?.let { bitmap ->
-                        val pdImage = LosslessFactory.createFromImage(document, bitmap)
+                        val pdImage = JPEGFactory.createFromImage(document, bitmap)
                         val sigWidth = 150f
                         val sigHeight = sigWidth * bitmap.height / bitmap.width
                         contentStream.drawImage(

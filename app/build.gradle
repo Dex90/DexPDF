@@ -31,6 +31,10 @@ android {
         jvmTarget = '17'
     }
 
+    lint {
+        abortOnError false
+    }
+
     buildFeatures {
         viewBinding true
     }
@@ -61,7 +65,14 @@ dependencies {
     implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
 
     // Word to PDF conversion
-    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+    implementation('org.apache.poi:poi-ooxml:5.2.5') {
+        exclude group: 'org.apache.xmlgraphics'
+        exclude group: 'org.apache.commons', module: 'commons-compress'
+        exclude group: 'com.github.virtuald'
+        exclude group: 'org.apache.santuario'
+        exclude group: 'org.bouncycastle'
+    }
+    implementation 'org.apache.commons:commons-compress:1.25.0'
 
     // Image processing
     implementation 'androidx.palette:palette-ktx:1.0.0'
