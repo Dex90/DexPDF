@@ -1,12 +1,12 @@
 package com.pdfeditor.app
 
+import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.Matrix
-import android.graphics.PointF
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 
 class ZoomableFrameLayout @JvmOverloads constructor(
@@ -15,63 +15,72 @@ class ZoomableFrameLayout @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private var scaleFactor = 1f
-    private var translateX = 0f
-    private var translateY = 0f
-    private var lastTouchX = 0f
-    private var lastTouchY = 0f
-    private var isPanning = false
-    private var activePointerId = -1
+    private var currentScale = 1f
+    private var currentTransX = 0f
+    private var currentTransY = 0f
+    private var lastFocusX = 0f
+    private var lastFocusY = 0f
+    private var isScaling = false
 
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-        override fun onScale(detector: ScaleGestureDetector): Boolean {
-            val oldScale = scaleFactor
-            scaleFactor *= detector.scaleFactor
-            scaleFactor = scaleFactor.coerceIn(1f, 5f)
+        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+            isScaling = true
+            lastFocusX = detector.focusX
+            lastFocusY = detector.focusY
+            return true
+        }
 
-            // Zoom towards focus point
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            val oldScale = currentScale
+            currentScale *= detector.scaleFactor
+            currentScale = currentScale.coerceIn(1f, 6f)
+
             val focusX = detector.focusX
             val focusY = detector.focusY
-            val scaleChange = scaleFactor / oldScale
-            translateX = focusX - (focusX - translateX) * scaleChange
-            translateY = focusY - (focusY - translateY) * scaleChange
+            val ratio = currentScale / oldScale
+            currentTransX = focusX - (focusX - currentTransX) * ratio
+            currentTransY = focusY - (focusY - currentTransY) * ratio
 
-            clampTranslation()
+            currentTransX += focusX - lastFocusX
+            currentTransY += focusY - lastFocusY
+            lastFocusX = focusX
+            lastFocusY = focusY
+
+            constrainPan()
             applyTransform()
             return true
+        }
+
+        override fun onScaleEnd(detector: ScaleGestureDetector) {
+            isScaling = false
         }
     })
 
     private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent): Boolean {
-            if (scaleFactor > 1.1f) {
-                // Reset zoom
-                scaleFactor = 1f
-                translateX = 0f
-                translateY = 0f
+            if (currentScale > 1.2f) {
+                animateToScale(1f, e.x, e.y)
             } else {
-                // Zoom to 2.5x at tap point
-                val oldScale = scaleFactor
-                scaleFactor = 2.5f
-                val scaleChange = scaleFactor / oldScale
-                translateX = e.x - (e.x - translateX) * scaleChange
-                translateY = e.y - (e.y - translateY) * scaleChange
-                clampTranslation()
+                animateToScale(3f, e.x, e.y)
             }
-            applyTransform()
             return true
+        }
+
+        override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+            if (currentScale > 1.05f && !isScaling) {
+                currentTransX -= distanceX
+                currentTransY -= distanceY
+                constrainPan()
+                applyTransform()
+                return true
+            }
+            return false
         }
     })
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
-        // Intercept 2-finger gestures for zoom/pan
-        // Also intercept 1-finger pan when zoomed in
         if (ev.pointerCount >= 2) return true
-        if (scaleFactor > 1.1f && ev.pointerCount == 1) {
-            // Only intercept if we're panning (not if child needs the touch)
-            // Let child handle single taps, but intercept moves when zoomed
-        }
-        // Let gestureDetector check for double tap
+        if (currentScale > 1.05f) return true
         gestureDetector.onTouchEvent(ev)
         return false
     }
@@ -79,79 +88,72 @@ class ZoomableFrameLayout @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                activePointerId = event.getPointerId(0)
-                lastTouchX = event.x
-                lastTouchY = event.y
-                isPanning = scaleFactor > 1.1f
-            }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                if (event.pointerCount == 2) {
-                    isPanning = true
-                    lastTouchX = (event.getX(0) + event.getX(1)) / 2
-                    lastTouchY = (event.getY(0) + event.getY(1)) / 2
-                }
-            }
-            MotionEvent.ACTION_MOVE -> {
-                if (isPanning) {
-                    val x: Float
-                    val y: Float
-                    if (event.pointerCount >= 2) {
-                        x = (event.getX(0) + event.getX(1)) / 2
-                        y = (event.getY(0) + event.getY(1)) / 2
-                    } else {
-                        x = event.x
-                        y = event.y
-                    }
-                    translateX += x - lastTouchX
-                    translateY += y - lastTouchY
-                    lastTouchX = x
-                    lastTouchY = y
-                    clampTranslation()
-                    applyTransform()
-                }
-            }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                isPanning = false
-                activePointerId = -1
-            }
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (event.pointerCount <= 2) {
-                    val remainingIndex = if (event.actionIndex == 0) 1 else 0
-                    if (remainingIndex < event.pointerCount) {
-                        lastTouchX = event.getX(remainingIndex)
-                        lastTouchY = event.getY(remainingIndex)
-                    }
-                }
-            }
-        }
         return true
     }
 
-    private fun clampTranslation() {
-        val maxTransX = (width * (scaleFactor - 1)) / 2
-        val maxTransY = (height * (scaleFactor - 1)) / 2
-        translateX = translateX.coerceIn(-maxTransX, maxTransX)
-        translateY = translateY.coerceIn(-maxTransY, maxTransY)
+    private fun constrainPan() {
+        if (currentScale <= 1f) {
+            currentTransX = 0f
+            currentTransY = 0f
+            return
+        }
+        val maxX = width * (currentScale - 1f) / 2f
+        val maxY = height * (currentScale - 1f) / 2f
+        currentTransX = currentTransX.coerceIn(-maxX, maxX)
+        currentTransY = currentTransY.coerceIn(-maxY, maxY)
     }
 
     private fun applyTransform() {
-        this.pivotX = 0f
-        this.pivotY = 0f
-        this.scaleX = scaleFactor
-        this.scaleY = scaleFactor
-        this.translationX = translateX
-        this.translationY = translateY
+        pivotX = 0f
+        pivotY = 0f
+        scaleX = currentScale
+        scaleY = currentScale
+        translationX = currentTransX
+        translationY = currentTransY
+        // Prevent flickering during transform
+        if (currentScale != 1f) {
+            setLayerType(LAYER_TYPE_HARDWARE, null)
+        } else {
+            setLayerType(LAYER_TYPE_NONE, null)
+        }
+    }
+
+    private fun animateToScale(targetScale: Float, focusX: Float, focusY: Float) {
+        val startScale = currentScale
+        val startTransX = currentTransX
+        val startTransY = currentTransY
+
+        val endTransX: Float
+        val endTransY: Float
+        if (targetScale <= 1f) {
+            endTransX = 0f
+            endTransY = 0f
+        } else {
+            val ratio = targetScale / startScale
+            endTransX = focusX - (focusX - startTransX) * ratio
+            endTransY = focusY - (focusY - startTransY) * ratio
+        }
+
+        val animator = ValueAnimator.ofFloat(0f, 1f)
+        animator.duration = 250
+        animator.interpolator = DecelerateInterpolator()
+        animator.addUpdateListener { anim ->
+            val fraction = anim.animatedValue as Float
+            currentScale = startScale + (targetScale - startScale) * fraction
+            currentTransX = startTransX + (endTransX - startTransX) * fraction
+            currentTransY = startTransY + (endTransY - startTransY) * fraction
+            constrainPan()
+            applyTransform()
+        }
+        animator.start()
     }
 
     fun resetZoom() {
-        scaleFactor = 1f
-        translateX = 0f
-        translateY = 0f
+        currentScale = 1f
+        currentTransX = 0f
+        currentTransY = 0f
         applyTransform()
     }
 
-    fun isZoomed(): Boolean = scaleFactor > 1.1f
+    fun isZoomed(): Boolean = currentScale > 1.05f
 }
