@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+
+    <!-- "D" letter stylized -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M30,35 L30,73 L45,73 C58,73 65,65 65,54 C65,43 58,35 45,35 Z M36,41 L44,41 C54,41 59,46 59,54 C59,62 54,67 44,67 L36,67 Z"/>
+
+    <!-- Small "PDF" text -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M69,58 L69,73 L72,73 L72,67 L75,67 C78,67 80,65 80,62.5 C80,60 78,58 75,58 Z M72,61 L74.5,61 C76,61 77,61.8 77,62.5 C77,63.2 76,64 74.5,64 L72,64 Z"/>
+
+</vector>

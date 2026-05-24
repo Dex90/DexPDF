@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#1A1A2E</color>
+    <color name="primary_dark">#0F0F1A</color>
+    <color name="accent">#4CAF50</color>
+    <color name="dex_green">#4CAF50</color>
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_surface">#1A1A2E</color>
+    <color name="toolbar_icon">#FFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="text_hint">#9E9E9E</color>
+</resources>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/select_signature"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface" />
+
+    <ImageView
+        android:id="@+id/imgSig1Preview"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_marginTop="16dp"
+        android:background="@android:drawable/editbox_background"
+        android:contentDescription="@string/signature_1"
+        android:padding="8dp"
+        android:scaleType="fitCenter" />
+
+    <ImageView
+        android:id="@+id/imgSig2Preview"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_marginTop="12dp"
+        android:background="@android:drawable/editbox_background"
+        android:contentDescription="@string/signature_2"
+        android:padding="8dp"
+        android:scaleType="fitCenter" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnManageSignatures"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="8dp"
+        android:text="@string/manage_signatures"
+        android:textColor="@color/accent" />
+
+</LinearLayout>

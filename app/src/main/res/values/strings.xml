@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dex PDF</string>
+    <string name="open_file">Apri File</string>
+    <string name="add_text">Aggiungi Testo</string>
+    <string name="add_signature">Firma</string>
+    <string name="save">Salva</string>
+    <string name="convert">Converti</string>
+    <string name="manage_signatures">Gestione Firme</string>
+    <string name="select_signature">Seleziona Firma</string>
+    <string name="signature_1">Firma 1</string>
+    <string name="signature_2">Firma 2</string>
+    <string name="no_signatures">Nessuna firma salvata</string>
+    <string name="upload_signature">Carica Firma</string>
+    <string name="remove_background">Rimozione sfondo...</string>
+    <string name="signature_saved">Firma salvata!</string>
+    <string name="max_signatures">Massimo 2 firme consentite</string>
+    <string name="enter_text">Inserisci testo</string>
+    <string name="place_text">Tocca dove vuoi inserire il testo</string>
+    <string name="place_signature">Tocca dove vuoi posizionare la firma</string>
+    <string name="file_saved">File salvato con successo</string>
+    <string name="converting">Conversione in corso...</string>
+    <string name="conversion_complete">Conversione completata!</string>
+    <string name="error_generic">Si è verificato un errore</string>
+    <string name="no_file_open">Nessun file aperto</string>
+    <string name="page_indicator">Pagina %1$d di %2$d</string>
+    <string name="delete_signature">Elimina</string>
+</resources>
