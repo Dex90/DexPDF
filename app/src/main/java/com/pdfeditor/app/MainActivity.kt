@@ -1,8 +1,7 @@
 package com.pdfeditor.app
 
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.*
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Bundle
@@ -31,7 +30,14 @@ class MainActivity : AppCompatActivity() {
     private var currentPdfUri: Uri? = null
     private var currentPdfFile: File? = null
     private var pendingCheckMark = false
-    private var currentPageBitmap: Bitmap? = null
+
+    // The clean PDF page bitmap (no annotations)
+    private var cleanPageBitmap: Bitmap? = null
+    // The displayed bitmap with annotations burned in
+    private var displayBitmap: Bitmap? = null
+
+    // All annotations for the current page (in bitmap coordinates)
+    private val pageAnnotations = mutableListOf<OverlayView.OverlayItem>()
 
     private val openFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -111,76 +117,231 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnPrevPage.setOnClickListener {
-            if (currentPage > 0) { currentPage--; renderPage() }
+            if (currentPage > 0) {
+                commitInlineText()
+                currentPage--
+                renderPage()
+            }
         }
 
         binding.btnNextPage.setOnClickListener {
-            if (currentPage < totalPages - 1) { currentPage++; renderPage() }
+            if (currentPage < totalPages - 1) {
+                commitInlineText()
+                currentPage++
+                renderPage()
+            }
         }
     }
 
     private fun setupOverlay() {
-        binding.overlayView.setOnPlacementListener(object : OverlayView.OnPlacementListener {
-            override fun onTextPlaced(x: Float, y: Float, text: String, textSize: Float) {}
+        // Connect OverlayView to the ImageView for coordinate mapping
+        binding.overlayView.setTargetImageView(binding.pdfPageView)
 
-            override fun onSignaturePlaced(x: Float, y: Float, bitmap: Bitmap) {
-                binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
-            }
-
-            override fun onTextPositionSelected(x: Float, y: Float) {
+        binding.overlayView.setOnBitmapEditListener(object : OverlayView.OnBitmapEditListener {
+            override fun onTextPositionSelected(bitmapX: Float, bitmapY: Float) {
                 if (pendingCheckMark) {
-                    binding.overlayView.addTextAt(x, y, "X", 18f)
+                    addCheckMark(bitmapX, bitmapY)
                     pendingCheckMark = false
                     binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
                 } else {
-                    showInlineEditor(x, y)
+                    showInlineEditor(bitmapX, bitmapY)
                 }
+            }
+
+            override fun onSignaturePlaced(bitmapX: Float, bitmapY: Float, signature: Bitmap) {
+                addSignature(bitmapX, bitmapY, signature)
+            }
+
+            override fun onHighlightStroke(path: Path) {
+                addHighlightStroke(path)
+            }
+
+            override fun onEraserStroke(path: Path) {
+                addEraserStroke(path)
             }
 
             override fun onEmptyAreaTapped() {
                 commitInlineText()
             }
+
+            override fun onItemDragged(item: OverlayView.OverlayItem, newBitmapX: Float, newBitmapY: Float) {
+                item.x = newBitmapX
+                item.y = newBitmapY
+                redrawAnnotations()
+            }
+
+            override fun onItemResized(item: OverlayView.OverlayItem, newScale: Float) {
+                item.scale = newScale
+                redrawAnnotations()
+            }
         })
     }
 
-    private fun hasFile(): Boolean {
-        if (currentPdfFile == null) {
-            showToast("Apri prima un file")
-            return false
-        }
-        return true
+    // --- Annotation operations (all in bitmap coordinates) ---
+
+    private fun addCheckMark(bx: Float, by: Float) {
+        val item = OverlayView.OverlayItem(
+            x = bx, y = by,
+            type = OverlayView.PlacementMode.TEXT,
+            text = "X",
+            textSize = 48f // bitmap-space size
+        )
+        pageAnnotations.add(item)
+        binding.overlayView.addItem(item)
+        redrawAnnotations()
     }
 
-    private fun cancelTextMode() {
-        pendingCheckMark = false
-        commitInlineText()
+    private fun addTextAt(bx: Float, by: Float, text: String) {
+        val item = OverlayView.OverlayItem(
+            x = bx, y = by,
+            type = OverlayView.PlacementMode.TEXT,
+            text = text,
+            textSize = 42f // bitmap-space size, good for 3x rendered PDF
+        )
+        pageAnnotations.add(item)
+        binding.overlayView.addItem(item)
+        redrawAnnotations()
+    }
+
+    private fun addSignature(bx: Float, by: Float, signature: Bitmap) {
+        val item = OverlayView.OverlayItem(
+            x = bx, y = by,
+            type = OverlayView.PlacementMode.SIGNATURE,
+            bitmap = signature
+        )
+        pageAnnotations.add(item)
+        binding.overlayView.addItem(item)
         binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
+        redrawAnnotations()
     }
 
-    private var inlineX = 0f
-    private var inlineY = 0f
+    private fun addHighlightStroke(path: Path) {
+        val color = binding.overlayView.getHighlightColor()
+        val item = OverlayView.OverlayItem(
+            x = 0f, y = 0f,
+            type = OverlayView.PlacementMode.HIGHLIGHT,
+            highlightPath = path,
+            highlightColor = color
+        )
+        pageAnnotations.add(item)
+        redrawAnnotations()
+    }
 
-    private fun showInlineEditor(x: Float, y: Float) {
-        // Commit any previous inline text first
+    private fun addEraserStroke(path: Path) {
+        val item = OverlayView.OverlayItem(
+            x = 0f, y = 0f,
+            type = OverlayView.PlacementMode.ERASER,
+            highlightPath = path
+        )
+        pageAnnotations.add(item)
+        redrawAnnotations()
+    }
+
+    // --- Core rendering: burn annotations onto bitmap ---
+
+    /**
+     * Redraws all annotations onto the clean bitmap and updates the ImageView.
+     * This is the "Adobe Reader" approach: annotations are part of the displayed bitmap.
+     */
+    private fun redrawAnnotations() {
+        val clean = cleanPageBitmap ?: return
+
+        // Create a mutable copy of the clean page
+        val result = clean.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas = Canvas(result)
+
+        val textPaint = Paint().apply {
+            color = Color.BLACK
+            isAntiAlias = true
+            style = Paint.Style.FILL
+        }
+
+        val highlightPaint = Paint().apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 28f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+            isAntiAlias = true
+        }
+
+        val eraserPaint = Paint().apply {
+            color = Color.WHITE
+            style = Paint.Style.STROKE
+            strokeWidth = 35f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+            isAntiAlias = true
+        }
+
+        for (item in pageAnnotations) {
+            when (item.type) {
+                OverlayView.PlacementMode.TEXT -> {
+                    textPaint.textSize = item.textSize * item.scale
+                    canvas.drawText(item.text ?: "", item.x, item.y, textPaint)
+                }
+                OverlayView.PlacementMode.SIGNATURE -> {
+                    item.bitmap?.let { bmp ->
+                        val sigW = 200f * item.scale
+                        val sigH = sigW * bmp.height / bmp.width
+                        val rect = RectF(
+                            item.x - sigW / 2, item.y - sigH / 2,
+                            item.x + sigW / 2, item.y + sigH / 2
+                        )
+                        canvas.drawBitmap(bmp, null, rect, null)
+                    }
+                }
+                OverlayView.PlacementMode.HIGHLIGHT -> {
+                    item.highlightPath?.let { path ->
+                        highlightPaint.color = Color.argb(
+                            80,
+                            Color.red(item.highlightColor),
+                            Color.green(item.highlightColor),
+                            Color.blue(item.highlightColor)
+                        )
+                        canvas.drawPath(path, highlightPaint)
+                    }
+                }
+                OverlayView.PlacementMode.ERASER -> {
+                    item.highlightPath?.let { path ->
+                        canvas.drawPath(path, eraserPaint)
+                    }
+                }
+                else -> {}
+            }
+        }
+
+        displayBitmap = result
+        binding.pdfPageView.setImageBitmap(result)
+    }
+
+    // --- Inline text editor ---
+
+    private var inlineBitmapX = 0f
+    private var inlineBitmapY = 0f
+
+    private fun showInlineEditor(bitmapX: Float, bitmapY: Float) {
         commitInlineText()
 
-        inlineX = x
-        inlineY = y
+        inlineBitmapX = bitmapX
+        inlineBitmapY = bitmapY
+
+        // Convert bitmap coords to view coords for EditText positioning
+        val imageMatrix = binding.pdfPageView.imageMatrix
+        val pts = floatArrayOf(bitmapX, bitmapY)
+        imageMatrix.mapPoints(pts)
 
         val editText = binding.inlineEditText
         val params = editText.layoutParams as android.widget.FrameLayout.LayoutParams
-        params.leftMargin = x.toInt()
-        params.topMargin = (y - 20).toInt() // offset up slightly so cursor is at tap point
+        params.leftMargin = pts[0].toInt()
+        params.topMargin = (pts[1] - 20).toInt()
         editText.layoutParams = params
         editText.setText("")
         editText.visibility = View.VISIBLE
         editText.requestFocus()
 
-        // Show keyboard
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
 
-        // When user taps elsewhere, commit the text
         binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
     }
 
@@ -189,14 +350,23 @@ class MainActivity : AppCompatActivity() {
         if (editText.visibility == View.VISIBLE) {
             val text = editText.text.toString()
             if (text.isNotBlank()) {
-                binding.overlayView.addTextAt(inlineX, inlineY, text, 14f)
+                addTextAt(inlineBitmapX, inlineBitmapY, text)
             }
             editText.setText("")
             editText.visibility = View.GONE
-            // Hide keyboard
             val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.hideSoftInputFromWindow(editText.windowToken, 0)
         }
+    }
+
+    // --- File handling ---
+
+    private fun hasFile(): Boolean {
+        if (currentPdfFile == null) {
+            showToast("Apri prima un file")
+            return false
+        }
+        return true
     }
 
     private fun handleIncomingIntent(intent: Intent) {
@@ -230,6 +400,7 @@ class MainActivity : AppCompatActivity() {
             totalPages = pdfRenderer!!.pageCount
             currentPage = 0
             binding.emptyState.visibility = View.GONE
+            pageAnnotations.clear()
             binding.overlayView.clearOverlays()
             renderPage()
         } catch (e: Exception) {
@@ -247,6 +418,7 @@ class MainActivity : AppCompatActivity() {
             totalPages = pdfRenderer!!.pageCount
             currentPage = 0
             binding.emptyState.visibility = View.GONE
+            pageAnnotations.clear()
             binding.overlayView.clearOverlays()
             renderPage()
         } catch (e: Exception) {
@@ -260,11 +432,20 @@ class MainActivity : AppCompatActivity() {
             val bitmap = Bitmap.createBitmap(page.width * 3, page.height * 3, Bitmap.Config.ARGB_8888)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
-            currentPageBitmap = bitmap
-            binding.pdfPageView.setImageBitmap(bitmap)
+
+            // Store the clean bitmap
+            cleanPageBitmap = bitmap
+            // Clear annotations for new page
+            pageAnnotations.clear()
+            binding.overlayView.clearOverlays()
+            // Display clean page
+            displayBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+            binding.pdfPageView.setImageBitmap(displayBitmap)
             binding.tvPageIndicator.text = getString(R.string.page_indicator, currentPage + 1, totalPages)
         }
     }
+
+    // --- Save ---
 
     private fun showSaveDialog() {
         val input = EditText(this)
@@ -289,12 +470,15 @@ class MainActivity : AppCompatActivity() {
     private fun quickSave() {
         val pdfFile = currentPdfFile ?: return
         try {
-            val overlays = binding.overlayView.getOverlayItems()
-            if (overlays.isNotEmpty()) {
-                PdfModifier.applyOverlays(pdfFile, currentPage, overlays,
-                    binding.pdfPageView.width.toFloat(), binding.pdfPageView.height.toFloat())
+            if (pageAnnotations.isNotEmpty()) {
+                val bitmap = cleanPageBitmap ?: return
+                PdfModifier.applyOverlays(
+                    pdfFile, currentPage, pageAnnotations,
+                    bitmap.width.toFloat(), bitmap.height.toFloat()
+                )
             }
             PdfModifier.saveToDownloads(this, pdfFile)
+            pageAnnotations.clear()
             binding.overlayView.clearOverlays()
             openPdfFromFile(pdfFile)
             showToast("Salvato nei Download!")
@@ -306,14 +490,17 @@ class MainActivity : AppCompatActivity() {
     private fun saveToUri(uri: Uri) {
         val pdfFile = currentPdfFile ?: return
         try {
-            val overlays = binding.overlayView.getOverlayItems()
-            if (overlays.isNotEmpty()) {
-                PdfModifier.applyOverlays(pdfFile, currentPage, overlays,
-                    binding.pdfPageView.width.toFloat(), binding.pdfPageView.height.toFloat())
+            if (pageAnnotations.isNotEmpty()) {
+                val bitmap = cleanPageBitmap ?: return
+                PdfModifier.applyOverlays(
+                    pdfFile, currentPage, pageAnnotations,
+                    bitmap.width.toFloat(), bitmap.height.toFloat()
+                )
             }
             contentResolver.openOutputStream(uri)?.use { output ->
                 pdfFile.inputStream().use { input -> input.copyTo(output) }
             }
+            pageAnnotations.clear()
             binding.overlayView.clearOverlays()
             openPdfFromFile(pdfFile)
             showToast("File salvato!")
@@ -322,8 +509,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // --- OCR ---
+
     private fun runOcr() {
-        val bitmap = currentPageBitmap ?: return
+        val bitmap = displayBitmap ?: return
         showToast("Riconoscimento testo...")
 
         val image = InputImage.fromBitmap(bitmap, 0)
@@ -335,7 +524,6 @@ class MainActivity : AppCompatActivity() {
                     showToast("Nessun testo trovato")
                     return@addOnSuccessListener
                 }
-                // Show recognized text in a dialog for editing
                 val editText = EditText(this)
                 editText.setText(result.text)
                 editText.setSelection(0)
@@ -365,14 +553,16 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    // --- Dialogs ---
+
     private fun showHighlightColorPicker() {
         val colors = arrayOf("Giallo", "Verde", "Rosa", "Azzurro", "Arancione")
         val colorValues = intArrayOf(
-            android.graphics.Color.YELLOW,
-            android.graphics.Color.rgb(76, 175, 80),
-            android.graphics.Color.rgb(233, 30, 99),
-            android.graphics.Color.rgb(3, 169, 244),
-            android.graphics.Color.rgb(255, 152, 0)
+            Color.YELLOW,
+            Color.rgb(76, 175, 80),
+            Color.rgb(233, 30, 99),
+            Color.rgb(3, 169, 244),
+            Color.rgb(255, 152, 0)
         )
         MaterialAlertDialogBuilder(this)
             .setTitle("Colore evidenziatore")
@@ -436,6 +626,8 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    // --- Cleanup ---
+
     private fun closePdfRenderer() {
         pdfRenderer?.close(); pdfRenderer = null
         fileDescriptor?.close(); fileDescriptor = null
@@ -443,5 +635,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun showToast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
-    override fun onDestroy() { super.onDestroy(); closePdfRenderer() }
+    override fun onDestroy() {
+        super.onDestroy()
+        closePdfRenderer()
+    }
 }
