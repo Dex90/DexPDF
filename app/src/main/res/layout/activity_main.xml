@@ -151,8 +151,8 @@
         android:id="@+id/pdfContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#404040"
-        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        android:background="#2A2A2A"
+        app:layout_constraintBottom_toTopOf="@id/textInputBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/actionBar">
@@ -183,7 +183,8 @@
                 android:layout_height="64dp"
                 android:alpha="0.6"
                 android:contentDescription="No file"
-                android:src="@android:drawable/ic_menu_agenda" />
+                android:src="@android:drawable/ic_menu_agenda"
+                android:tint="#FFFFFF" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -195,13 +196,13 @@
         </LinearLayout>
     </FrameLayout>
 
-    <!-- Text Input Bar -->
+    <!-- Text Input Bar - ELEVATED ABOVE PDF -->
     <LinearLayout
         android:id="@+id/textInputBar"
         android:layout_width="0dp"
-        android:layout_height="52dp"
+        android:layout_height="56dp"
         android:background="@color/surface"
-        android:elevation="8dp"
+        android:elevation="12dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="12dp"
@@ -213,22 +214,25 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/editTextDirect"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
-            android:background="@android:drawable/editbox_background"
+            android:background="@drawable/edit_text_background"
             android:hint="Scrivi qui, poi tocca il PDF..."
             android:inputType="text"
             android:paddingHorizontal="12dp"
+            android:textColor="@color/on_surface"
+            android:textColorHint="#9E9E9E"
             android:textSize="14sp" />
 
         <ImageButton
             android:id="@+id/btnCancelText"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Annulla"
-            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:tint="@color/on_surface" />
     </LinearLayout>
 
     <!-- Bottom page navigation -->
@@ -250,7 +254,8 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Previous"
-            android:src="@android:drawable/ic_media_previous" />
+            android:src="@android:drawable/ic_media_previous"
+            android:tint="@color/on_surface" />
 
         <TextView
             android:id="@+id/tvPageIndicator"
@@ -267,7 +272,8 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Next"
-            android:src="@android:drawable/ic_media_next" />
+            android:src="@android:drawable/ic_media_next"
+            android:tint="@color/on_surface" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
