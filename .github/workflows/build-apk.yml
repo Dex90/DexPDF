@@ -28,11 +28,17 @@ jobs:
         run: |
           sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Setup Gradle and build
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-          arguments: assembleDebug --stacktrace
+      - name: Download and setup Gradle 8.7
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
+
+      - name: Build Debug APK
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
