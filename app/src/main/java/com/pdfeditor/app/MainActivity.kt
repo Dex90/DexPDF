@@ -73,12 +73,9 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnAddText.setOnClickListener {
             if (!hasFile()) return@setOnClickListener
-            binding.textInputBar.visibility = View.VISIBLE
-            binding.editTextDirect.requestFocus()
             binding.overlayView.setPlacementMode(OverlayView.PlacementMode.TEXT)
+            showToast("Tocca dove vuoi scrivere")
         }
-
-        binding.btnCancelText.setOnClickListener { cancelTextMode() }
 
         binding.btnAddCheck.setOnClickListener {
             if (!hasFile()) return@setOnClickListener
@@ -136,14 +133,12 @@ class MainActivity : AppCompatActivity() {
                     pendingCheckMark = false
                     binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
                 } else {
-                    val text = binding.editTextDirect.text.toString()
-                    if (text.isNotBlank()) {
-                        binding.overlayView.addTextAt(x, y, text, 14f)
-                        binding.editTextDirect.text?.clear()
-                    } else {
-                        showToast("Scrivi prima il testo")
-                    }
+                    showInlineEditor(x, y)
                 }
+            }
+
+            override fun onEmptyAreaTapped() {
+                commitInlineText()
             }
         })
     }
@@ -158,9 +153,50 @@ class MainActivity : AppCompatActivity() {
 
     private fun cancelTextMode() {
         pendingCheckMark = false
-        binding.textInputBar.visibility = View.GONE
-        binding.editTextDirect.text?.clear()
+        commitInlineText()
         binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
+    }
+
+    private var inlineX = 0f
+    private var inlineY = 0f
+
+    private fun showInlineEditor(x: Float, y: Float) {
+        // Commit any previous inline text first
+        commitInlineText()
+
+        inlineX = x
+        inlineY = y
+
+        val editText = binding.inlineEditText
+        val params = editText.layoutParams as android.widget.FrameLayout.LayoutParams
+        params.leftMargin = x.toInt()
+        params.topMargin = (y - 20).toInt() // offset up slightly so cursor is at tap point
+        editText.layoutParams = params
+        editText.setText("")
+        editText.visibility = View.VISIBLE
+        editText.requestFocus()
+
+        // Show keyboard
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+
+        // When user taps elsewhere, commit the text
+        binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
+    }
+
+    private fun commitInlineText() {
+        val editText = binding.inlineEditText
+        if (editText.visibility == View.VISIBLE) {
+            val text = editText.text.toString()
+            if (text.isNotBlank()) {
+                binding.overlayView.addTextAt(inlineX, inlineY, text, 14f)
+            }
+            editText.setText("")
+            editText.visibility = View.GONE
+            // Hide keyboard
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.hideSoftInputFromWindow(editText.windowToken, 0)
+        }
     }
 
     private fun handleIncomingIntent(intent: Intent) {
@@ -317,8 +353,6 @@ class MainActivity : AppCompatActivity() {
                     .setNeutralButton("Aggiungi al PDF") { _, _ ->
                         val text = editText.text.toString()
                         if (text.isNotBlank()) {
-                            binding.editTextDirect.setText(text)
-                            binding.textInputBar.visibility = View.VISIBLE
                             binding.overlayView.setPlacementMode(OverlayView.PlacementMode.TEXT)
                             showToast("Tocca dove vuoi posizionare il testo")
                         }

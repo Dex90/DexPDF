@@ -32,6 +32,7 @@ class OverlayView @JvmOverloads constructor(
         fun onTextPlaced(x: Float, y: Float, text: String, textSize: Float)
         fun onSignaturePlaced(x: Float, y: Float, bitmap: Bitmap)
         fun onTextPositionSelected(x: Float, y: Float)
+        fun onEmptyAreaTapped()
     }
 
     private var placementMode = PlacementMode.NONE
@@ -213,6 +214,7 @@ class OverlayView @JvmOverloads constructor(
                 }
 
                 selectedItem = null
+                listener?.onEmptyAreaTapped()
                 invalidate()
                 return false // Let parent handle (zoom/pan)
             }

@@ -19,7 +19,6 @@
         app:title="Dex PDF"
         app:titleTextColor="@color/on_primary" />
 
-    <!-- Toolbar with clear icon labels -->
     <HorizontalScrollView
         android:id="@+id/actionBar"
         android:layout_width="0dp"
@@ -72,7 +71,6 @@
                 android:text="Spunta"
                 android:textColor="@color/primary"
                 android:textSize="11sp"
-                android:textStyle="bold"
                 app:icon="@android:drawable/checkbox_on_background"
                 app:iconGravity="top"
                 app:iconSize="20dp"
@@ -146,13 +144,13 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-    <!-- PDF Area: PhotoView for zoom + Overlay on top -->
+    <!-- PDF Area -->
     <FrameLayout
         android:id="@+id/pdfContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="#2A2A2A"
-        app:layout_constraintBottom_toTopOf="@id/textInputBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/actionBar">
@@ -168,6 +166,22 @@
             android:id="@+id/overlayView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <!-- Floating inline EditText - positioned dynamically -->
+        <EditText
+            android:id="@+id/inlineEditText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:cursorVisible="true"
+            android:hint=""
+            android:inputType="text"
+            android:minWidth="50dp"
+            android:padding="0dp"
+            android:textColor="#000000"
+            android:textCursorDrawable="@null"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/emptyState"
@@ -195,45 +209,6 @@
                 android:textSize="16sp" />
         </LinearLayout>
     </FrameLayout>
-
-    <!-- Text Input Bar - ELEVATED ABOVE PDF -->
-    <LinearLayout
-        android:id="@+id/textInputBar"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:background="@color/surface"
-        android:elevation="12dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/bottomBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editTextDirect"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:background="@drawable/edit_text_background"
-            android:hint="Scrivi qui, poi tocca il PDF..."
-            android:inputType="text"
-            android:paddingHorizontal="12dp"
-            android:textColor="@color/on_surface"
-            android:textColorHint="#9E9E9E"
-            android:textSize="14sp" />
-
-        <ImageButton
-            android:id="@+id/btnCancelText"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Annulla"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="@color/on_surface" />
-    </LinearLayout>
 
     <!-- Bottom page navigation -->
     <LinearLayout
