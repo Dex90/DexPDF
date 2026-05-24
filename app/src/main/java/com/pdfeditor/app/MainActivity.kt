@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         setupToolbar()
         setupButtons()
         setupOverlay()
+        setupPhotoViewMatrixListener()
         handleIncomingIntent(intent)
     }
 
@@ -119,6 +120,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Listen to PhotoView matrix changes and feed them to the OverlayView.
+     * This ensures annotations always stay aligned with the PDF bitmap
+     * regardless of zoom/pan state.
+     */
+    private fun setupPhotoViewMatrixListener() {
+        binding.pdfPageView.setOnMatrixChangeListener {
+            syncOverlayMatrix()
+        }
+    }
+
+    /**
+     * Sync the PhotoView's image display matrix to the OverlayView.
+     */
+    private fun syncOverlayMatrix() {
+        val bitmap = currentPageBitmap ?: return
+        val matrix = binding.pdfPageView.displayMatrix
+        binding.overlayView.updateDisplayMatrix(
+            matrix,
+            bitmap.width.toFloat(),
+            bitmap.height.toFloat()
+        )
+    }
+
     private fun setupOverlay() {
         binding.overlayView.setOnPlacementListener(object : OverlayView.OnPlacementListener {
             override fun onTextPlaced(x: Float, y: Float, text: String, textSize: Float) {}
@@ -128,6 +153,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onTextPositionSelected(x: Float, y: Float) {
+                // x, y are now in bitmap coordinates
                 if (pendingCheckMark) {
                     binding.overlayView.addTextAt(x, y, "X", 18f)
                     pendingCheckMark = false
@@ -157,20 +183,28 @@ class MainActivity : AppCompatActivity() {
         binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
     }
 
-    private var inlineX = 0f
-    private var inlineY = 0f
+    // These store bitmap coordinates for the inline editor
+    private var inlineBitmapX = 0f
+    private var inlineBitmapY = 0f
 
-    private fun showInlineEditor(x: Float, y: Float) {
+    private fun showInlineEditor(bitmapX: Float, bitmapY: Float) {
         // Commit any previous inline text first
         commitInlineText()
 
-        inlineX = x
-        inlineY = y
+        inlineBitmapX = bitmapX
+        inlineBitmapY = bitmapY
+
+        // Convert bitmap coords to screen coords for positioning the EditText
+        val matrix = binding.pdfPageView.displayMatrix
+        val pts = floatArrayOf(bitmapX, bitmapY)
+        matrix.mapPoints(pts)
+        val screenX = pts[0]
+        val screenY = pts[1]
 
         val editText = binding.inlineEditText
         val params = editText.layoutParams as android.widget.FrameLayout.LayoutParams
-        params.leftMargin = x.toInt()
-        params.topMargin = (y - 20).toInt() // offset up slightly so cursor is at tap point
+        params.leftMargin = screenX.toInt()
+        params.topMargin = (screenY - 20).toInt()
         editText.layoutParams = params
         editText.setText("")
         editText.visibility = View.VISIBLE
@@ -180,7 +214,7 @@ class MainActivity : AppCompatActivity() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
 
-        // When user taps elsewhere, commit the text
+        // Switch off text placement mode
         binding.overlayView.setPlacementMode(OverlayView.PlacementMode.NONE)
     }
 
@@ -189,7 +223,8 @@ class MainActivity : AppCompatActivity() {
         if (editText.visibility == View.VISIBLE) {
             val text = editText.text.toString()
             if (text.isNotBlank()) {
-                binding.overlayView.addTextAt(inlineX, inlineY, text, 14f)
+                // Add text at bitmap coordinates
+                binding.overlayView.addTextAt(inlineBitmapX, inlineBitmapY, text, 14f)
             }
             editText.setText("")
             editText.visibility = View.GONE
@@ -263,6 +298,9 @@ class MainActivity : AppCompatActivity() {
             currentPageBitmap = bitmap
             binding.pdfPageView.setImageBitmap(bitmap)
             binding.tvPageIndicator.text = getString(R.string.page_indicator, currentPage + 1, totalPages)
+
+            // After setting the image, sync the matrix to overlay on next layout
+            binding.pdfPageView.post { syncOverlayMatrix() }
         }
     }
 
@@ -290,9 +328,10 @@ class MainActivity : AppCompatActivity() {
         val pdfFile = currentPdfFile ?: return
         try {
             val overlays = binding.overlayView.getOverlayItems()
-            if (overlays.isNotEmpty()) {
-                PdfModifier.applyOverlays(pdfFile, currentPage, overlays,
-                    binding.pdfPageView.width.toFloat(), binding.pdfPageView.height.toFloat())
+            val bitmapW = binding.overlayView.getBitmapWidth()
+            val bitmapH = binding.overlayView.getBitmapHeight()
+            if (overlays.isNotEmpty() && bitmapW > 0 && bitmapH > 0) {
+                PdfModifier.applyOverlays(pdfFile, currentPage, overlays, bitmapW, bitmapH)
             }
             PdfModifier.saveToDownloads(this, pdfFile)
             binding.overlayView.clearOverlays()
@@ -307,9 +346,10 @@ class MainActivity : AppCompatActivity() {
         val pdfFile = currentPdfFile ?: return
         try {
             val overlays = binding.overlayView.getOverlayItems()
-            if (overlays.isNotEmpty()) {
-                PdfModifier.applyOverlays(pdfFile, currentPage, overlays,
-                    binding.pdfPageView.width.toFloat(), binding.pdfPageView.height.toFloat())
+            val bitmapW = binding.overlayView.getBitmapWidth()
+            val bitmapH = binding.overlayView.getBitmapHeight()
+            if (overlays.isNotEmpty() && bitmapW > 0 && bitmapH > 0) {
+                PdfModifier.applyOverlays(pdfFile, currentPage, overlays, bitmapW, bitmapH)
             }
             contentResolver.openOutputStream(uri)?.use { output ->
                 pdfFile.inputStream().use { input -> input.copyTo(output) }
@@ -335,7 +375,6 @@ class MainActivity : AppCompatActivity() {
                     showToast("Nessun testo trovato")
                     return@addOnSuccessListener
                 }
-                // Show recognized text in a dialog for editing
                 val editText = EditText(this)
                 editText.setText(result.text)
                 editText.setSelection(0)
