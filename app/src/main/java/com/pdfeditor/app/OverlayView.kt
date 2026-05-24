@@ -39,6 +39,15 @@ class OverlayView @JvmOverloads constructor(
     private val overlayItems = mutableListOf<OverlayItem>()
     private var listener: OnPlacementListener? = null
 
+    // Multi-page overlay storage
+    private val pageOverlays = mutableMapOf<Int, MutableList<OverlayItem>>()
+    private var currentPageIndex = 0
+
+    // Undo/Redo stacks
+    private val undoStack = mutableListOf<OverlayItem>()
+    private val redoStack = mutableListOf<OverlayItem>()
+    private var undoRedoListener: OnUndoRedoStateListener? = null
+
     // Selection and interaction
     private var selectedItem: OverlayItem? = null
     private var isDragging = false
@@ -50,6 +59,11 @@ class OverlayView @JvmOverloads constructor(
     private var isDrawing = false
     private var currentPath: Path? = null
     private var highlightColor: Int = Color.YELLOW
+
+    // Zoom/Pan compensation from PhotoView
+    private var zoomScale = 1f
+    private var panX = 0f
+    private var panY = 0f
 
     private val textPaint = Paint().apply {
         color = Color.BLACK
@@ -88,6 +102,111 @@ class OverlayView @JvmOverloads constructor(
 
     private val HANDLE_RADIUS = 20f
 
+    // === Undo/Redo Interface ===
+
+    interface OnUndoRedoStateListener {
+        fun onUndoRedoStateChanged(canUndo: Boolean, canRedo: Boolean)
+    }
+
+    fun setOnUndoRedoStateListener(l: OnUndoRedoStateListener) {
+        undoRedoListener = l
+    }
+
+    fun canUndo(): Boolean = undoStack.isNotEmpty()
+    fun canRedo(): Boolean = redoStack.isNotEmpty()
+
+    fun undo() {
+        if (undoStack.isNotEmpty()) {
+            val item = undoStack.removeAt(undoStack.lastIndex)
+            redoStack.add(item)
+            overlayItems.remove(item)
+            notifyUndoRedoState()
+            invalidate()
+        }
+    }
+
+    fun redo() {
+        if (redoStack.isNotEmpty()) {
+            val item = redoStack.removeAt(redoStack.lastIndex)
+            undoStack.add(item)
+            overlayItems.add(item)
+            notifyUndoRedoState()
+            invalidate()
+        }
+    }
+
+    private fun addItemWithUndo(item: OverlayItem) {
+        overlayItems.add(item)
+        undoStack.add(item)
+        redoStack.clear() // Clear redo when new action is performed
+        notifyUndoRedoState()
+    }
+
+    private fun notifyUndoRedoState() {
+        undoRedoListener?.onUndoRedoStateChanged(canUndo(), canRedo())
+    }
+
+    // === Multi-page Support ===
+
+    fun setCurrentPage(pageIndex: Int) {
+        // Save current page overlays
+        saveCurrentPageOverlays()
+        // Switch to new page
+        currentPageIndex = pageIndex
+        // Load overlays for the new page
+        loadPageOverlays()
+        // Reset undo/redo for new page
+        undoStack.clear()
+        redoStack.clear()
+        notifyUndoRedoState()
+        selectedItem = null
+        invalidate()
+    }
+
+    private fun saveCurrentPageOverlays() {
+        if (overlayItems.isNotEmpty()) {
+            pageOverlays[currentPageIndex] = overlayItems.toMutableList()
+        } else {
+            pageOverlays.remove(currentPageIndex)
+        }
+    }
+
+    private fun loadPageOverlays() {
+        overlayItems.clear()
+        pageOverlays[currentPageIndex]?.let { saved ->
+            overlayItems.addAll(saved)
+        }
+    }
+
+    fun getAllPageOverlays(): Map<Int, List<OverlayItem>> {
+        // Make sure current page is saved
+        saveCurrentPageOverlays()
+        return pageOverlays.mapValues { it.value.toList() }
+    }
+
+    fun hasAnyOverlays(): Boolean {
+        saveCurrentPageOverlays()
+        return pageOverlays.any { it.value.isNotEmpty() }
+    }
+
+    // === Zoom/Pan Compensation ===
+
+    fun updateZoomState(scale: Float, translateX: Float, translateY: Float) {
+        zoomScale = scale
+        panX = translateX
+        panY = translateY
+        invalidate()
+    }
+
+    /** Convert screen touch coordinates to view-local coordinates accounting for zoom */
+    private fun screenToLocal(x: Float, y: Float): Pair<Float, Float> {
+        val localX = (x - panX) / zoomScale
+        val localY = (y - panY) / zoomScale
+        return Pair(localX, localY)
+    }
+
+    // === Public Methods ===
+
     fun setHighlightColor(color: Int) {
         highlightColor = color
     }
@@ -101,15 +220,45 @@ class OverlayView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun clearOverlays() { overlayItems.clear(); selectedItem = null; invalidate() }
+    fun getPlacementMode(): PlacementMode = placementMode
+
+    fun clearOverlays() {
+        overlayItems.clear()
+        undoStack.clear()
+        redoStack.clear()
+        selectedItem = null
+        notifyUndoRedoState()
+        invalidate()
+    }
+
+    fun clearAllPages() {
+        overlayItems.clear()
+        pageOverlays.clear()
+        undoStack.clear()
+        redoStack.clear()
+        selectedItem = null
+        notifyUndoRedoState()
+        invalidate()
+    }
+
     fun getOverlayItems(): List<OverlayItem> = overlayItems.toList()
 
     fun addTextAt(x: Float, y: Float, text: String, textSize: Float) {
         val item = OverlayItem(x = x, y = y, type = PlacementMode.TEXT, text = text, textSize = textSize)
-        overlayItems.add(item)
+        addItemWithUndo(item)
         selectedItem = item
         placementMode = PlacementMode.NONE
         invalidate()
+    }
+
+    fun deleteSelected() {
+        selectedItem?.let { item ->
+            overlayItems.remove(item)
+            undoStack.remove(item)
+            selectedItem = null
+            notifyUndoRedoState()
+            invalidate()
+        }
     }
 
     private fun getItemBounds(item: OverlayItem): RectF {
@@ -150,8 +299,11 @@ class OverlayView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val x = event.x
-        val y = event.y
+        val rawX = event.x
+        val rawY = event.y
+        // Use raw coordinates (zoom compensation handled at placement level)
+        val x = rawX
+        val y = rawY
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -171,7 +323,7 @@ class OverlayView @JvmOverloads constructor(
                 if (placementMode == PlacementMode.SIGNATURE) {
                     pendingSignature?.let { sig ->
                         val item = OverlayItem(x = x, y = y, type = PlacementMode.SIGNATURE, bitmap = sig)
-                        overlayItems.add(item)
+                        addItemWithUndo(item)
                         selectedItem = item
                         listener?.onSignaturePlaced(x, y, sig)
                     }
@@ -239,7 +391,7 @@ class OverlayView @JvmOverloads constructor(
                         highlightPath = currentPath,
                         highlightColor = if (placementMode == PlacementMode.ERASER) Color.WHITE else highlightColor
                     )
-                    overlayItems.add(item)
+                    addItemWithUndo(item)
                     isDrawing = false
                     currentPath = null
                     invalidate()

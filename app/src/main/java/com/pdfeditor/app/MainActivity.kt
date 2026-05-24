@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         setupToolbar()
         setupButtons()
         setupOverlay()
+        setupUndoRedo()
         handleIncomingIntent(intent)
     }
 
@@ -76,6 +77,7 @@ class MainActivity : AppCompatActivity() {
             binding.textInputBar.visibility = View.VISIBLE
             binding.editTextDirect.requestFocus()
             binding.overlayView.setPlacementMode(OverlayView.PlacementMode.TEXT)
+            showToast("Scrivi il testo e tocca il PDF")
         }
 
         binding.btnCancelText.setOnClickListener { cancelTextMode() }
@@ -114,12 +116,46 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnPrevPage.setOnClickListener {
-            if (currentPage > 0) { currentPage--; renderPage() }
+            if (currentPage > 0) {
+                currentPage--
+                binding.overlayView.setCurrentPage(currentPage)
+                renderPage()
+            }
         }
 
         binding.btnNextPage.setOnClickListener {
-            if (currentPage < totalPages - 1) { currentPage++; renderPage() }
+            if (currentPage < totalPages - 1) {
+                currentPage++
+                binding.overlayView.setCurrentPage(currentPage)
+                renderPage()
+            }
         }
+
+        // Undo/Redo buttons
+        binding.btnUndo.setOnClickListener {
+            binding.overlayView.undo()
+        }
+
+        binding.btnRedo.setOnClickListener {
+            binding.overlayView.redo()
+        }
+    }
+
+    private fun setupUndoRedo() {
+        // Initially disabled
+        binding.btnUndo.alpha = 0.4f
+        binding.btnRedo.alpha = 0.4f
+        binding.btnUndo.isEnabled = false
+        binding.btnRedo.isEnabled = false
+
+        binding.overlayView.setOnUndoRedoStateListener(object : OverlayView.OnUndoRedoStateListener {
+            override fun onUndoRedoStateChanged(canUndo: Boolean, canRedo: Boolean) {
+                binding.btnUndo.isEnabled = canUndo
+                binding.btnUndo.alpha = if (canUndo) 1.0f else 0.4f
+                binding.btnRedo.isEnabled = canRedo
+                binding.btnRedo.alpha = if (canRedo) 1.0f else 0.4f
+            }
+        })
     }
 
     private fun setupOverlay() {
@@ -194,7 +230,8 @@ class MainActivity : AppCompatActivity() {
             totalPages = pdfRenderer!!.pageCount
             currentPage = 0
             binding.emptyState.visibility = View.GONE
-            binding.overlayView.clearOverlays()
+            binding.overlayView.clearAllPages()
+            binding.overlayView.setCurrentPage(0)
             renderPage()
         } catch (e: Exception) {
             showToast("Errore: ${e.message}")
@@ -211,7 +248,8 @@ class MainActivity : AppCompatActivity() {
             totalPages = pdfRenderer!!.pageCount
             currentPage = 0
             binding.emptyState.visibility = View.GONE
-            binding.overlayView.clearOverlays()
+            binding.overlayView.clearAllPages()
+            binding.overlayView.setCurrentPage(0)
             renderPage()
         } catch (e: Exception) {
             showToast("Errore: ${e.message}")
@@ -253,15 +291,12 @@ class MainActivity : AppCompatActivity() {
     private fun quickSave() {
         val pdfFile = currentPdfFile ?: return
         try {
-            val overlays = binding.overlayView.getOverlayItems()
-            if (overlays.isNotEmpty()) {
-                PdfModifier.applyOverlays(pdfFile, currentPage, overlays,
-                    binding.pdfPageView.width.toFloat(), binding.pdfPageView.height.toFloat())
-            }
-            PdfModifier.saveToDownloads(this, pdfFile)
-            binding.overlayView.clearOverlays()
+            // Apply overlays for ALL pages that have annotations
+            applyAllOverlays(pdfFile)
+            val fileName = PdfModifier.saveToDownloads(this, pdfFile)
+            binding.overlayView.clearAllPages()
             openPdfFromFile(pdfFile)
-            showToast("Salvato nei Download!")
+            showToast("Salvato: $fileName")
         } catch (e: Exception) {
             showToast("Errore: ${e.message}")
         }
@@ -270,19 +305,28 @@ class MainActivity : AppCompatActivity() {
     private fun saveToUri(uri: Uri) {
         val pdfFile = currentPdfFile ?: return
         try {
-            val overlays = binding.overlayView.getOverlayItems()
-            if (overlays.isNotEmpty()) {
-                PdfModifier.applyOverlays(pdfFile, currentPage, overlays,
-                    binding.pdfPageView.width.toFloat(), binding.pdfPageView.height.toFloat())
-            }
+            // Apply overlays for ALL pages
+            applyAllOverlays(pdfFile)
             contentResolver.openOutputStream(uri)?.use { output ->
                 pdfFile.inputStream().use { input -> input.copyTo(output) }
             }
-            binding.overlayView.clearOverlays()
+            binding.overlayView.clearAllPages()
             openPdfFromFile(pdfFile)
             showToast("File salvato!")
         } catch (e: Exception) {
             showToast("Errore: ${e.message}")
+        }
+    }
+
+    private fun applyAllOverlays(pdfFile: File) {
+        val allOverlays = binding.overlayView.getAllPageOverlays()
+        val viewWidth = binding.pdfPageView.width.toFloat()
+        val viewHeight = binding.pdfPageView.height.toFloat()
+
+        for ((pageIndex, overlays) in allOverlays) {
+            if (overlays.isNotEmpty()) {
+                PdfModifier.applyOverlays(pdfFile, pageIndex, overlays, viewWidth, viewHeight)
+            }
         }
     }
 
@@ -299,7 +343,6 @@ class MainActivity : AppCompatActivity() {
                     showToast("Nessun testo trovato")
                     return@addOnSuccessListener
                 }
-                // Show recognized text in a dialog for editing
                 val editText = EditText(this)
                 editText.setText(result.text)
                 editText.setSelection(0)
